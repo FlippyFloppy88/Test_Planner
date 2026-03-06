@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Test Planner (macOS)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "args": ["-d", "macos"],
+      "flutterMode": "debug"
+    },
+    {
+      "name": "Test Planner (Chrome)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "args": ["-d", "chrome"],
+      "flutterMode": "debug"
+    },
+    {
+      "name": "Test Planner (Edge)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "args": ["-d", "edge"],
+      "flutterMode": "debug"
+    }
+  ]
+}
