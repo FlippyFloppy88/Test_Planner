@@ -55,6 +55,8 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
   final Map<String, FocusNode> _focusNodes = {};
   final Map<String, bool> _editing = {};
   final Map<String, List<Attachment>> _stagedAttachments = {};
+  // Snapshot of text at the moment editing started; used by Cancel to revert.
+  final Map<String, String> _originalTexts = {};
 
   @override
   void initState() {
@@ -149,8 +151,10 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
       if (!_controllers.containsKey(item.id)) {
         _controllers[item.id] = TextEditingController(text: item.text);
         _focusNodes[item.id] = FocusNode();
-        _editing[item.id] = false;
-        _stagedAttachments[item.id] = [];
+        // Use putIfAbsent so that a value set before _emit (e.g. _addItem sets
+        // _editing[id]=true) is NOT overwritten when _syncControllers fires.
+        _editing.putIfAbsent(item.id, () => false);
+        _stagedAttachments.putIfAbsent(item.id, () => []);
       } else if (_controllers[item.id]!.text != item.text) {
         // Only overwrite the controller text when the item is NOT in edit
         // mode. If the user is currently editing (possibly with staged
@@ -194,6 +198,7 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
     // Mark new item as editing so the TextField appears immediately.
     _editing[newItem.id] = true;
     _stagedAttachments[newItem.id] = [];
+    _originalTexts[newItem.id] = '';
     _emit([...widget.items, newItem]);
   }
 
@@ -276,22 +281,22 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
     final originalName = p.basename(sourcePath);
     final ext = p.extension(originalName); // e.g. ".png"
 
-    // 2. Ask the user for a label / name.
+    // 2. Ask the user for a hyperlink label and a filename.
     if (!context.mounted) {
       debugPrint('[PROC_DBG] _pickImage aborted: context not mounted');
       return;
     }
-    final imageName = await _showImageNameDialog(context, originalName);
-    debugPrint('[PROC_DBG] _pickImage imageName dialog returned: $imageName');
-    if (imageName == null) {
-      debugPrint('[PROC_DBG] _pickImage cancelled by imageName dialog');
+    final imageInfo = await _showImageNameDialog(context, originalName);
+    debugPrint('[PROC_DBG] _pickImage imageInfo dialog returned: $imageInfo');
+    if (imageInfo == null) {
+      debugPrint('[PROC_DBG] _pickImage cancelled by imageInfo dialog');
       return; // cancelled
     }
 
-    // Ensure the name has the correct extension.
-    final safeLabel = imageName.trim().isEmpty ? originalName : imageName.trim();
-    final fileName = safeLabel.endsWith(ext) ? safeLabel : '$safeLabel$ext';
-    debugPrint('[PROC_DBG] _pickImage safeLabel="$safeLabel" fileName="$fileName" ext="$ext"');
+    final linkLabel = imageInfo['label']!;
+    final saveAsName = imageInfo['filename']!;
+    final fileName = saveAsName.endsWith(ext) ? saveAsName : '$saveAsName$ext';
+    debugPrint('[PROC_DBG] _pickImage linkLabel="$linkLabel" fileName="$fileName" ext="$ext"');
 
     // 3. Determine if the selected file is already inside the storage root.
     final normalizedStorage = p.normalize(widget.storageFolderPath).toLowerCase();
@@ -307,11 +312,12 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
       if (!await destDir.exists()) {
         await destDir.create(recursive: true);
       }
-      final destPath = p.join(destDir.path, fileName);
-      debugPrint('[PROC_DBG] copying sourcePath=$sourcePath -> destPath=$destPath');
+      final storedFileName = _makeUniqueFileName(destDir, fileName);
+      final destPath = p.join(destDir.path, storedFileName);
+      debugPrint('[PROC_DBG] copying sourcePath=$sourcePath -> destPath=$destPath (stored as $storedFileName)');
       await File(sourcePath).copy(destPath);
       debugPrint('[PROC_DBG] copy completed');
-      relativeFilePath = p.join(widget.imageRelativePath, fileName);
+      relativeFilePath = p.join(widget.imageRelativePath, storedFileName);
     }
     debugPrint('[PROC_DBG] computed relativeFilePath=$relativeFilePath fileName=$fileName');
     final mimeType = _mimeFromExtension(fileName);
@@ -328,9 +334,6 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
 
     // 5. Stage the attachment and append placeholder into the controller
     // text only. The attachment and text are committed on Save.
-    final linkLabel = safeLabel.endsWith(ext)
-        ? safeLabel.substring(0, safeLabel.length - ext.length)
-        : safeLabel;
     final placeholder = '[📎 $linkLabel](attachment:$id)';
     debugPrint('[PROC_DBG] placeholder="$placeholder"');
     final item = widget.items[index];
@@ -362,15 +365,19 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
     } catch (_) {
       debugPrint('[PROC_DBG] failed to set selection');
     }
+    // Re-request focus so the text field stays active after dialogs close.
+    Future.microtask(() => _focusNodes[cid]?.requestFocus());
   }
 
   void _startEdit(int index) {
     final id = widget.items[index].id;
+    // Snapshot the current text so Cancel can revert to it.
+    _originalTexts[id] = widget.items[index].text;
     setState(() {
       _editing[id] = true;
       _stagedAttachments[id] = [];
       // ensure controller exists
-      _controllers[id] = _controllers[id] ?? TextEditingController(text: widget.items[index].text);
+      _controllers[id] ??= TextEditingController(text: widget.items[index].text);
       // focus
       Future.microtask(() => _focusNodes[id]?.requestFocus());
     });
@@ -390,48 +397,76 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
     );
     _editing[id] = false;
     _stagedAttachments[id] = [];
+    _originalTexts.remove(id);
     _emit(_reorder(updated));
   }
 
   void _cancelEdit(int index) {
     final id = widget.items[index].id;
-    // revert controller text to original
-    _controllers[id]?.text = widget.items[index].text;
+    // Revert controller and parent item text to the pre-edit snapshot.
+    final origText = _originalTexts.remove(id) ?? widget.items[index].text;
+    _controllers[id]?.text = origText;
     _stagedAttachments[id] = [];
+    // Emit the reverted text so parent state is also restored.
+    final updated = List<ProcedureItem>.from(widget.items);
+    updated[index] = updated[index].copyWith(text: origText);
     setState(() => _editing[id] = false);
+    _emit(_reorder(updated));
   }
 
-  /// Shows a dialog prompting the user to name the image.
-  /// Returns the entered name, or null if cancelled.
-  Future<String?> _showImageNameDialog(
+  /// Shows a dialog with a hyperlink label field and a filename field.
+  /// Returns {'label': ..., 'filename': ...} or null if cancelled.
+  Future<Map<String, String>?> _showImageNameDialog(
       BuildContext context, String defaultName) {
     final ext = p.extension(defaultName);
     final stem = p.basenameWithoutExtension(defaultName);
-    final ctrl = TextEditingController(text: stem);
+    final labelCtrl = TextEditingController(text: stem);
+    final fileCtrl = TextEditingController(text: stem);
 
-    return showDialog<String>(
+    return showDialog<Map<String, String>>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Name this image'),
-        content: StatefulBuilder(builder: (ctx2, setState) {
-          // Ensure the default text is selected after the dialog is shown
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            try {
-              ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
-            } catch (_) {}
-          });
-          return TextField(
-            controller: ctrl,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: 'Image label',
-              hintText: 'e.g. Login screenshot',
-              suffixText: ext,
-              border: const OutlineInputBorder(),
-            ),
-            onSubmitted: (v) => Navigator.pop(ctx, v.trim().isEmpty ? null : v),
-          );
-        }),
+        title: const Text('Insert Image'),
+        content: StatefulBuilder(
+          builder: (ctx2, ss) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: labelCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Hyperlink label',
+                  hintText: 'e.g. Login screenshot',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: fileCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Save image as',
+                        suffixText: ext,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Tooltip(
+                    message: 'Copy from label',
+                    child: IconButton(
+                      icon: const Icon(Icons.content_copy, size: 18),
+                      onPressed: () => ss(() => fileCtrl.text = labelCtrl.text),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, null),
@@ -439,10 +474,15 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
           ),
           FilledButton(
             onPressed: () {
-              final val = ctrl.text.trim();
-              Navigator.pop(ctx, val.isEmpty ? null : val);
+              final label = labelCtrl.text.trim();
+              final file = fileCtrl.text.trim();
+              if (label.isEmpty) return;
+              Navigator.pop(ctx, {
+                'label': label,
+                'filename': file.isEmpty ? label : file,
+              });
             },
-            child: const Text('Add Image'),
+            child: const Text('Insert'),
           ),
         ],
       ),
@@ -461,6 +501,21 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
       'heif': 'image/heif',
     };
     return map[ext] ?? 'application/octet-stream';
+  }
+
+  /// Returns a filename that does not yet exist in [dir].
+  /// If [desired] already exists, appends _2, _3, … until a free name is found.
+  /// E.g. image.jpg → image_2.jpg → image_3.jpg
+  String _makeUniqueFileName(Directory dir, String desired) {
+    final ext = p.extension(desired);
+    final stem = p.basenameWithoutExtension(desired);
+    if (!File(p.join(dir.path, desired)).existsSync()) return desired;
+    var n = 2;
+    while (true) {
+      final candidate = '${stem}_$n$ext';
+      if (!File(p.join(dir.path, candidate)).existsSync()) return candidate;
+      n++;
+    }
   }
 
   void _showImagePreview(BuildContext context, Attachment att) {
