@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
+import '../../widgets/common/procedure_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
@@ -828,8 +829,12 @@ class _ProcedureView extends StatelessWidget {
                             .bodyMedium
                             ?.copyWith(fontWeight: FontWeight.bold)),
                     Expanded(
-                        child: Text(item.text,
-                            style: Theme.of(context).textTheme.bodyMedium)),
+                        child: ProcedureText(
+                      text: item.text,
+                      attachments: item.attachments,
+                      onAttachmentTap: (att) => _showImagePreview(context, att),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    )),
                   ],
                 ),
                 if (item.attachments.isNotEmpty)

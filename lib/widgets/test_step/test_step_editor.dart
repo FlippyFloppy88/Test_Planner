@@ -27,6 +27,7 @@ class TestStepEditor extends StatefulWidget {
 
   /// Sanitized test case name used as the top-level subfolder.
   final String testCaseName;
+  final String planImageRelativePath;
 
   /// For sub-step editors: the path segment of the parent step, e.g. "step_1".
   /// Leave empty for top-level steps.
@@ -41,6 +42,7 @@ class TestStepEditor extends StatefulWidget {
     this.depth = 0,
     this.storageFolderPath = '',
     this.testCaseName = '',
+    this.planImageRelativePath = '',
     this.parentPathSegment = '',
   });
 
@@ -74,17 +76,7 @@ class _TestStepEditorState extends State<TestStepEditor> {
 
   void _emit(TestStep step) => widget.onChanged(step);
 
-  /// The path segment for THIS step, e.g. "step_1" or "step_1_sub_3".
-  String get _myPathSegment {
-    if (widget.parentPathSegment.isEmpty) {
-      return 'step_${widget.stepIndex + 1}';
-    }
-    return '${widget.parentPathSegment}_sub_${widget.stepIndex + 1}';
-  }
-
-  /// Full relative image path for THIS step's procedure:
-  /// e.g. "My_Test_Case/step_1" or "My_Test_Case/step_1_sub_3"
-  String get _procedureRelativePath => '${widget.testCaseName}/$_myPathSegment';
+  // Path segment helpers removed; images are stored per test plan now.
 
   void _onFieldChanged() {
     _emit(widget.step.copyWith(
@@ -175,7 +167,8 @@ class _TestStepEditorState extends State<TestStepEditor> {
                         onChanged: (items) =>
                             _emit(widget.step.copyWith(procedure: items)),
                         storageFolderPath: widget.storageFolderPath,
-                        imageRelativePath: _procedureRelativePath,
+                        // Use plan-level image folder instead of per-step folder
+                        imageRelativePath: widget.planImageRelativePath,
                         itemHint: 'Describe this procedure step...',
                       ),
                     ),
@@ -218,14 +211,14 @@ class _TestStepEditorState extends State<TestStepEditor> {
                         },
                         itemBuilder: (ctx, i) {
                           final sub = widget.step.subSteps[i];
-                          return TestStepEditor(
+                            return TestStepEditor(
                             key: ValueKey(sub.id),
                             step: sub,
                             stepIndex: i,
                             depth: widget.depth + 1,
                             storageFolderPath: widget.storageFolderPath,
                             testCaseName: widget.testCaseName,
-                            parentPathSegment: _myPathSegment,
+                              parentPathSegment: '',
                             onChanged: (updated) => _updateSubStep(i, updated),
                             onDelete: () => _deleteSubStep(i),
                           );

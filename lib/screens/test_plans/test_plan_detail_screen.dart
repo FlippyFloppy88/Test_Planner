@@ -21,10 +21,15 @@ class TestPlanDetailScreen extends ConsumerWidget {
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
       data: (plans) {
-        final plan = plans.firstWhere(
-          (p) => p.id == planId,
-          orElse: () => throw StateError('Plan not found'),
-        );
+        late final TestPlan plan;
+        try {
+          plan = plans.firstWhere((p) => p.id == planId);
+        } catch (_) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Test Plan')),
+            body: Center(child: Text('Plan not found')),
+          );
+        }
 
         return Scaffold(
           body: Column(

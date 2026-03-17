@@ -46,7 +46,7 @@ class StorageService {
         try {
           final resolved = await _bookmarks!
               .resolveBookmark(bookmarkStr, isDirectory: true);
-          await _bookmarks!.startAccessingSecurityScopedResource(resolved);
+          await _bookmarks.startAccessingSecurityScopedResource(resolved);
           _folderPath = resolved.path;
           dev.log('[StorageService] init() restored via bookmark: $_folderPath');
           return;
@@ -271,5 +271,25 @@ class StorageService {
     await saveTestRuns((bundle['testRuns'] as List)
         .map((e) => TestRun.fromJson(e as Map<String, dynamic>))
         .toList());
+  }
+
+  /// Delete a folder under the storage root given its relative path.
+  Future<void> deleteRelativeFolder(String relativePath) async {
+    if (!hasFolderOpen) return;
+    final dir = Directory(p.join(_folderPath, relativePath));
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
+      dev.log('[StorageService] deleted folder: ${dir.path}');
+    }
+  }
+
+  /// Delete a file under the storage root if it exists.
+  Future<void> deleteFileIfExists(String relativeFilePath) async {
+    if (!hasFolderOpen) return;
+    final file = File(p.join(_folderPath, relativeFilePath));
+    if (await file.exists()) {
+      await file.delete();
+      dev.log('[StorageService] deleted file: ${file.path}');
+    }
   }
 }

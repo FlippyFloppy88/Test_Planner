@@ -38,6 +38,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
   List<TestStep>? _steps;
   List<ProcedureItem> _preconditions = [];
   List<String> _jiraLinks = [];
+  String _planImageFolder = '';
   bool _dirty = false;
   bool _descExpanded = false;
   bool _precondExpanded = false;
@@ -70,6 +71,8 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
     _steps = List<TestStep>.from(tc.steps);
     _preconditions = List<ProcedureItem>.from(tc.preconditions);
     _jiraLinks = List<String>.from(tc.jiraLinks);
+    // Determine plan-level image folder slug
+    _planImageFolder = _safeName(plan.name.isEmpty ? plan.id : plan.name);
   }
 
   /// Collect all storyLinks from steps and sub-steps recursively.
@@ -171,7 +174,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
     return plansAsync.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(body: Center(child: Text('Error: \$e'))),
+      error: (e, _) => const Scaffold(body: Center(child: Text('Error: \$e'))),
       data: (plans) {
         _loadFromPlan(plans);
 
@@ -282,9 +285,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                               () => _precondExpanded = !_precondExpanded),
                           child: Builder(builder: (ctx) {
                             final storage = ref.read(storageServiceProvider);
-                            final tcName = _safeName(_nameCtrl.text.isEmpty
-                                ? widget.caseId
-                                : _nameCtrl.text);
+                            // final tcName unused; keep test case name available elsewhere
                             return ProcedureWidget(
                               items: _preconditions,
                               onChanged: (items) => setState(() {
@@ -294,7 +295,8 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                               storageFolderPath: storage.hasFolderOpen
                                   ? storage.folderPath
                                   : '',
-                              imageRelativePath: '$tcName/preconditions',
+                              // Images organized per test plan rather than per step
+                              imageRelativePath: _planImageFolder,
                               itemHint: 'Enter a precondition...',
                             );
                           }),
@@ -355,6 +357,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                                     ? storage.folderPath
                                     : '',
                                 testCaseName: tcName,
+                                planImageRelativePath: _planImageFolder,
                                 onChanged: (updated) => _updateStep(i, updated),
                                 onDelete: () => _deleteStep(i),
                               );

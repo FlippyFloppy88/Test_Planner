@@ -42,6 +42,20 @@ class TestPlansNotifier extends AsyncNotifier<List<TestPlan>> {
   }
 
   Future<void> deleteTestPlan(String id) async {
+    // Find the plan so we can remove its image folder and any per-plan files.
+    final current = state.valueOrNull ?? [];
+    final idx = current.indexWhere((p) => p.id == id);
+    if (idx != -1) {
+      final plan = current[idx];
+      // Compute plan-level image folder slug (same as used elsewhere).
+      String slug = plan.name.isEmpty ? plan.id : plan.name;
+      slug = slug.replaceAll(RegExp(r'[^\w\s-]'), '');
+      slug = slug.replaceAll(RegExp(r'\s+'), '_').trim();
+      // Remove plan folder and any per-plan JSON (best-effort).
+      await ref.read(storageServiceProvider).deleteRelativeFolder(slug);
+      await ref.read(storageServiceProvider).deleteFileIfExists('$slug.json');
+    }
+
     final plans = (state.valueOrNull ?? []).where((p) => p.id != id).toList();
     await _save(plans);
   }
