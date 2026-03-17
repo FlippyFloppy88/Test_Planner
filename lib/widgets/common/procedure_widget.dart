@@ -110,16 +110,42 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
         title: const Text('Choose image'),
         content: SizedBox(
           width: double.maxFinite,
-          height: 300,
-          child: ListView.builder(
+          height: 400,
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 120,
+              crossAxisSpacing: 6,
+              mainAxisSpacing: 6,
+              childAspectRatio: 1,
+            ),
             itemCount: files.length,
             itemBuilder: (c, i) {
               final f = files[i];
-              final rel = p.relative(f.path, from: widget.storageFolderPath);
-              return ListTile(
-                title: Text(p.basename(f.path)),
-                subtitle: Text(rel, maxLines: 1, overflow: TextOverflow.ellipsis),
+              return InkWell(
+                borderRadius: BorderRadius.circular(6),
                 onTap: () => Navigator.pop(ctx, f.path),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.file(
+                          f,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 40),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      p.basenameWithoutExtension(f.path),
+                      style: const TextStyle(fontSize: 10),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -633,6 +659,7 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
                 onPickImage: () => _pickImage(ctx, i),
                 onDelete: () => _deleteItem(i),
                 onShowImage: (att) => _showImagePreview(ctx, att),
+                storageFolderPath: widget.storageFolderPath,
                 stagedAttachments: _stagedAttachments[item.id],
               );
             },
@@ -659,6 +686,7 @@ class _ProcedureItemRow extends StatefulWidget {
   final VoidCallback onDelete;
   final ValueChanged<Attachment> onShowImage;
   final List<Attachment>? stagedAttachments;
+  final String storageFolderPath;
   const _ProcedureItemRow({
     super.key,
     required this.index,
@@ -674,6 +702,7 @@ class _ProcedureItemRow extends StatefulWidget {
     required this.onPickImage,
     required this.onDelete,
     required this.onShowImage,
+    required this.storageFolderPath,
     this.stagedAttachments,
   });
 
@@ -787,24 +816,37 @@ class _ProcedureItemRowState extends State<_ProcedureItemRow> {
                     ),
                   ),
 
-                // Attachment chips (include staged attachments while editing)
+                // Attachment thumbnails (include staged attachments while editing)
                 if (combinedAttachments.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(top: 6),
+                    padding: const EdgeInsets.only(top: 8),
                     child: Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: combinedAttachments.map((att) {
-                        return ActionChip(
-                          avatar: const Icon(Icons.photo, size: 14),
-                          label: Text(
-                            att.filePath.isNotEmpty
-                                ? p.basenameWithoutExtension(att.fileName)
-                                : att.fileName,
-                            style: const TextStyle(fontSize: 12),
+                        final absPath = att.filePath.isNotEmpty && widget.storageFolderPath.isNotEmpty
+                            ? p.join(widget.storageFolderPath, att.filePath)
+                            : null;
+                        final imageFile = absPath != null ? File(absPath) : null;
+                        return Tooltip(
+                          message: att.fileName,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(6),
+                            onTap: () => widget.onShowImage(att),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: SizedBox(
+                                width: 72,
+                                height: 72,
+                                child: (imageFile != null && imageFile.existsSync())
+                                    ? Image.file(imageFile, fit: BoxFit.cover)
+                                    : Container(
+                                        color: Colors.grey.shade200,
+                                        child: const Icon(Icons.broken_image, size: 32),
+                                      ),
+                              ),
+                            ),
                           ),
-                          onPressed: () => widget.onShowImage(att),
-                          tooltip: 'Tap to view: ${att.fileName}',
                         );
                       }).toList(),
                     ),
