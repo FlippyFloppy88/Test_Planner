@@ -49,6 +49,8 @@ class CaseGroup {
   final String testCaseId;
   final String testCaseName;
   final List<ProcedureItem> preconditions;
+  final String description;
+  final List<String> jiraLinks;
 
   /// Indices into [TestRun.stepResults] for this test case's steps.
   final List<int> stepIndices;
@@ -57,6 +59,8 @@ class CaseGroup {
     required this.testCaseId,
     required this.testCaseName,
     required this.preconditions,
+    this.description = '',
+    this.jiraLinks = const [],
     required this.stepIndices,
   });
 }
@@ -71,6 +75,8 @@ List<CaseGroup> _buildCaseGroups(
       testCaseId: tc.id,
       testCaseName: tc.name,
       preconditions: tc.preconditions,
+      description: tc.description,
+      jiraLinks: tc.jiraLinks,
       stepIndices: List.generate(count, (i) => resultIdx + i),
     ));
     resultIdx += count;
@@ -215,6 +221,68 @@ class ExecutionNotifier extends Notifier<ExecutionState?> {
     state = null;
   }
 
+  /// Persists the in-progress run and clears the active session so it can be
+  /// resumed later from the Release Plans screen.
+  Future<void> saveCurrentRun() async {
+    final s = state;
+    if (s == null) return;
+    await ref.read(testRunsProvider.notifier).addTestRun(s.run);
+    state = null;
+  }
+
+  /// Reconstructs an [ExecutionState] from a previously saved (incomplete)
+  /// [TestRun] so the user can continue where they left off.
+  void resumeSavedRun({
+    required TestRun run,
+    required List<TestPlan> allTestPlans,
+  }) {
+    final groups = <CaseGroup>[];
+    int i = 0;
+    while (i < run.stepResults.length) {
+      final caseId = run.stepResults[i].testCaseId;
+      final caseName = run.stepResults[i].testCaseName;
+      int j = i;
+      while (j < run.stepResults.length &&
+          run.stepResults[j].testCaseId == caseId) {
+        j++;
+      }
+      // Look up preconditions / description / jira links from original plan
+      TestCase? tc;
+      for (final plan in allTestPlans) {
+        final match =
+            plan.testCases.where((c) => c.id == caseId).firstOrNull;
+        if (match != null) {
+          tc = match;
+          break;
+        }
+      }
+      groups.add(CaseGroup(
+        testCaseId: caseId,
+        testCaseName: caseName,
+        preconditions: tc?.preconditions ?? [],
+        description: tc?.description ?? '',
+        jiraLinks: tc?.jiraLinks ?? [],
+        stepIndices: List.generate(j - i, (k) => i + k),
+      ));
+      i = j;
+    }
+    // Resume at first case that still has un-run steps
+    int caseIdx = groups.isEmpty ? 0 : groups.length - 1;
+    for (int g = 0; g < groups.length; g++) {
+      if (groups[g].stepIndices.any(
+            (idx) => run.stepResults[idx].status == StepResultStatus.notRun,
+          )) {
+        caseIdx = g;
+        break;
+      }
+    }
+    state = ExecutionState(
+      run: run,
+      currentCaseIndex: caseIdx,
+      caseGroups: groups,
+    );
+  }
+
   TestRun? get completedRun => (state?.isComplete == true) ? state?.run : null;
 }
 
@@ -232,7 +300,13 @@ class TestRunsNotifier extends AsyncNotifier<List<TestRun>> {
   }
 
   Future<void> addTestRun(TestRun run) async {
-    final runs = List<TestRun>.from(state.valueOrNull ?? [])..add(run);
+    final runs = List<TestRun>.from(state.valueOrNull ?? []);
+    final idx = runs.indexWhere((r) => r.id == run.id);
+    if (idx != -1) {
+      runs[idx] = run;
+    } else {
+      runs.add(run);
+    }
     await ref.read(storageServiceProvider).saveTestRuns(runs);
     state = AsyncData(runs);
   }

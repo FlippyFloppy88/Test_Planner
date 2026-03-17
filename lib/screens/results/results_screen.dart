@@ -39,7 +39,10 @@ class ResultsScreen extends ConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (runs) {
-                if (runs.isEmpty) {
+                // Only show completed runs; incomplete/saved runs live in
+                // the Release Plans screen.
+                final completed = runs.where((r) => r.isComplete).toList();
+                if (completed.isEmpty) {
                   return const EmptyState(
                     icon: Icons.bar_chart,
                     title: 'No Test Results Yet',
@@ -49,7 +52,7 @@ class ResultsScreen extends ConsumerWidget {
                 }
 
                 // Sort most recent first
-                final sorted = [...runs]
+                final sorted = [...completed]
                   ..sort((a, b) => b.executedAt.compareTo(a.executedAt));
 
                 return ListView.builder(

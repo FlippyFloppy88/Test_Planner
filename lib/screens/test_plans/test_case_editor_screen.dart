@@ -41,9 +41,9 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
   String _planImageFolder = '';
   bool _dirty = false;
   Timer? _autoSaveTimer;
-  bool _descExpanded = false;
   bool _precondExpanded = false;
   bool _jiraExpanded = false;
+  bool _testsExpanded = true;
 
   @override
   void initState() {
@@ -86,7 +86,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
     _preconditions = List<ProcedureItem>.from(tc.preconditions);
     _jiraLinks = List<String>.from(tc.jiraLinks);
     // Determine plan-level image folder slug
-    _planImageFolder = _safeName(plan.name.isEmpty ? plan.id : plan.name);
+    _planImageFolder = 'test_plans/${_safeName(plan.name.isEmpty ? plan.id : plan.name)}';
   }
 
   /// Collect all storyLinks from steps and sub-steps recursively.
@@ -203,28 +203,29 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
             _nameCtrl.text.isEmpty ? 'Edit Test Case' : _nameCtrl.text;
 
         return PopScope(
-          canPop: !_dirty,
+          canPop: false,
           onPopInvokedWithResult: (didPop, _) async {
-            if (didPop) return;
-            final save = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Unsaved Changes'),
-                content: const Text('Save before leaving?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Discard'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Save'),
-                  ),
-                ],
-              ),
-            );
-            if (save == true) await _save();
-            if (context.mounted) context.go('/test-plans/\${widget.planId}');
+            if (_dirty) {
+              final save = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Unsaved Changes'),
+                  content: const Text('Save before leaving?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Discard'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              );
+              if (save == true) await _save();
+            }
+            if (context.mounted) context.go('/test-plans/${widget.planId}');
           },
           child: Scaffold(
             body: Column(
@@ -237,7 +238,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                       IconButton(
                         icon: const Icon(Icons.arrow_back),
                         onPressed: () =>
-                            context.go('/test-plans/\${widget.planId}'),
+                            context.go('/test-plans/${widget.planId}'),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -281,26 +282,24 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // ── Description (expandable) ─────────────────────
-                        _ExpandableSection(
-                          title: 'Description',
-                          expanded: _descExpanded,
-                          onToggle: () =>
-                              setState(() => _descExpanded = !_descExpanded),
-                          child: TextField(
-                            controller: _descCtrl,
-                            decoration: const InputDecoration(
-                                labelText: 'Description (optional)',
-                                border: OutlineInputBorder()),
-                            maxLines: 4,
-                            onChanged: (_) => _markDirty(),
+                        // ── Description (always visible) ─────────────────
+                        TextField(
+                          controller: _descCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Description (optional)',
+                            border: OutlineInputBorder(),
                           ),
+                          maxLines: 4,
+                          onChanged: (_) => _markDirty(),
                         ),
                         const SizedBox(height: 12),
 
                         // ── Preconditions (expandable, ProcedureWidget) ───
                         _ExpandableSection(
                           title: 'Preconditions',
+                          badge: _preconditions.isEmpty
+                              ? null
+                              : '${_preconditions.length} step${_preconditions.length != 1 ? 's' : ''}',
                           expanded: _precondExpanded,
                           onToggle: () => setState(
                               () => _precondExpanded = !_precondExpanded),
@@ -327,85 +326,102 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                         // ── Jira / Story Links (expandable) ──────────────
                         _ExpandableSection(
                           title: 'Jira / Story Links',
+                          badge: _jiraLinks.isEmpty
+                              ? null
+                              : '${_jiraLinks.length} link${_jiraLinks.length != 1 ? 's' : ''}',
                           expanded: _jiraExpanded,
                           onToggle: () =>
                               setState(() => _jiraExpanded = !_jiraExpanded),
                           child: _buildJiraLinks(context),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 12),
 
                         // ── Tests ────────────────────────────────────────
-                        Row(
-                          children: [
-                            Text('Tests',
-                                style: Theme.of(context).textTheme.titleMedium),
-                            const Spacer(),
-                            FilledButton.tonalIcon(
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add Test'),
-                              onPressed: _addStep,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        if (_steps != null && _steps!.isNotEmpty)
-                          ReorderableListView.builder(
-                            buildDefaultDragHandles: false,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _steps!.length,
-                            onReorder: (oldIdx, newIdx) {
-                              setState(() {
-                                if (newIdx > oldIdx) newIdx--;
-                                final s = List<TestStep>.from(_steps!);
-                                final item = s.removeAt(oldIdx);
-                                s.insert(newIdx, item);
-                                _steps = s;
-                                _dirty = true;
-                              });
-                              _markDirty();
-                            },
-                            itemBuilder: (ctx, i) {
-                              final storage = ref.read(storageServiceProvider);
-                              final tcName = _safeName(_nameCtrl.text.isEmpty
-                                  ? widget.caseId
-                                  : _nameCtrl.text);
-                              return TestStepEditor(
-                                key: ValueKey(_steps![i].id),
-                                step: _steps![i],
-                                stepIndex: i,
-                                depth: 0,
-                                storageFolderPath: storage.hasFolderOpen
-                                    ? storage.folderPath
-                                    : '',
-                                testCaseName: tcName,
-                                planImageRelativePath: _planImageFolder,
-                                onChanged: (updated) => _updateStep(i, updated),
-                                onDelete: () => _deleteStep(i),
-                              );
-                            },
-                          )
-                        else
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Column(
+                        _ExpandableSection(
+                          title: 'Tests',
+                          badge: (_steps == null || _steps!.isEmpty)
+                              ? null
+                              : '${_steps!.length} test${_steps!.length != 1 ? 's' : ''}',
+                          expanded: _testsExpanded,
+                          onToggle: () =>
+                              setState(() => _testsExpanded = !_testsExpanded),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
-                                  const Icon(Icons.list_alt,
-                                      size: 48, color: Colors.grey),
-                                  const SizedBox(height: 8),
-                                  const Text('No tests yet'),
-                                  const SizedBox(height: 16),
-                                  OutlinedButton.icon(
+                                  const Spacer(),
+                                  FilledButton.tonalIcon(
                                     icon: const Icon(Icons.add),
-                                    label: const Text('Add First Test'),
+                                    label: const Text('Add Test'),
                                     onPressed: _addStep,
                                   ),
                                 ],
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              if (_steps != null && _steps!.isNotEmpty)
+                                ReorderableListView.builder(
+                                  buildDefaultDragHandles: false,
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: _steps!.length,
+                                  onReorder: (oldIdx, newIdx) {
+                                    setState(() {
+                                      if (newIdx > oldIdx) newIdx--;
+                                      final s = List<TestStep>.from(_steps!);
+                                      final item = s.removeAt(oldIdx);
+                                      s.insert(newIdx, item);
+                                      _steps = s;
+                                      _dirty = true;
+                                    });
+                                    _markDirty();
+                                  },
+                                  itemBuilder: (ctx, i) {
+                                    final storage =
+                                        ref.read(storageServiceProvider);
+                                    final tcName =
+                                        _safeName(_nameCtrl.text.isEmpty
+                                            ? widget.caseId
+                                            : _nameCtrl.text);
+                                    return TestStepEditor(
+                                      key: ValueKey(_steps![i].id),
+                                      step: _steps![i],
+                                      stepIndex: i,
+                                      depth: 0,
+                                      storageFolderPath: storage.hasFolderOpen
+                                          ? storage.folderPath
+                                          : '',
+                                      testCaseName: tcName,
+                                      planImageRelativePath: _planImageFolder,
+                                      onChanged: (updated) =>
+                                          _updateStep(i, updated),
+                                      onDelete: () => _deleteStep(i),
+                                    );
+                                  },
+                                )
+                              else
+                                Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(32),
+                                    child: Column(
+                                      children: [
+                                        const Icon(Icons.list_alt,
+                                            size: 48, color: Colors.grey),
+                                        const SizedBox(height: 8),
+                                        const Text('No tests yet'),
+                                        const SizedBox(height: 16),
+                                        OutlinedButton.icon(
+                                          icon: const Icon(Icons.add),
+                                          label: const Text('Add First Test'),
+                                          onPressed: _addStep,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
+                        ),
                       ],
                     ),
                   ),
@@ -479,12 +495,15 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
 
 class _ExpandableSection extends StatelessWidget {
   final String title;
+  /// If provided, shown as a small badge when the section is collapsed.
+  final String? badge;
   final bool expanded;
   final VoidCallback onToggle;
   final Widget child;
 
   const _ExpandableSection({
     required this.title,
+    this.badge,
     required this.expanded,
     required this.onToggle,
     required this.child,
@@ -493,6 +512,7 @@ class _ExpandableSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -504,19 +524,32 @@ class _ExpandableSection extends StatelessWidget {
             child: Row(
               children: [
                 Text(title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
+                    style: textTheme.titleSmall
                         ?.copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(width: 4),
-                Text('(optional)',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: colors.onSurfaceVariant)),
+                const SizedBox(width: 6),
+                // When collapsed and has content, show a count badge;
+                // otherwise show the '(optional)' hint.
+                if (!expanded && badge != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: colors.secondaryContainer,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      badge!,
+                      style: textTheme.labelSmall?.copyWith(
+                          color: colors.onSecondaryContainer),
+                    ),
+                  )
+                else
+                  Text('(optional)',
+                      style: textTheme.bodySmall
+                          ?.copyWith(color: colors.onSurfaceVariant)),
                 const Spacer(),
                 Icon(
-                  expanded ? Icons.expand_less : Icons.expand_more,
+                  expanded ? Icons.expand_more : Icons.expand_less,
                   size: 18,
                   color: colors.primary,
                 ),

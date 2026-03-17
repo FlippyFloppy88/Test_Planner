@@ -131,7 +131,7 @@ class _TestStepEditorState extends State<TestStepEditor> {
                 children: [
                   IconButton(
                     icon:
-                        Icon(_expanded ? Icons.expand_less : Icons.expand_more),
+                        Icon(_expanded ? Icons.expand_more : Icons.expand_less),
                     onPressed: () => setState(() => _expanded = !_expanded),
                   ),
                   if (widget.onDelete != null)
@@ -344,7 +344,7 @@ class _ExpandableSection extends StatelessWidget {
                         ?.copyWith(color: colors.onSurfaceVariant)),
                 const Spacer(),
                 Icon(
-                  expanded ? Icons.expand_less : Icons.expand_more,
+                  expanded ? Icons.expand_more : Icons.expand_less,
                   size: 18,
                   color: colors.onSurfaceVariant,
                 ),

@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
-import '../../widgets/common/dialogs.dart';
 import '../../widgets/common/empty_state.dart';
 import '../../widgets/common/numbered_drag_handle.dart';
-
-const _uuid = Uuid();
 
 class ReleasePlanDetailScreen extends ConsumerWidget {
   final String planId;
@@ -62,42 +58,11 @@ class ReleasePlanDetailScreen extends ConsumerWidget {
                               _startExecution(context, ref, plan, testPlans),
                     ),
                     const SizedBox(width: 8),
-                    PopupMenuButton<String>(
-                      child: const FilledButton.tonal(
-                        onPressed: null,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.add),
-                            SizedBox(width: 4),
-                            Text('Add'),
-                            Icon(Icons.arrow_drop_down),
-                          ],
-                        ),
-                      ),
-                      onSelected: (value) {
-                        if (value == 'plan') {
-                          _addTestPlanRef(context, ref, plan.id, testPlans);
-                        } else {
-                          _addOneOffCase(context, ref, plan.id);
-                        }
-                      },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(
-                          value: 'plan',
-                          child: ListTile(
-                            leading: Icon(Icons.checklist),
-                            title: Text('Add Test Plan'),
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'oneoff',
-                          child: ListTile(
-                            leading: Icon(Icons.assignment_add),
-                            title: Text('Add One-off Test Case'),
-                          ),
-                        ),
-                      ],
+                    FilledButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Test Plan'),
+                      onPressed: () =>
+                          _addTestPlanRef(context, ref, plan.id, testPlans),
                     ),
                   ],
                 ),
@@ -107,13 +72,13 @@ class ReleasePlanDetailScreen extends ConsumerWidget {
 
               Expanded(
                 child: plan.items.isEmpty
-                    ? EmptyState(
+                    ? const EmptyState(
                         icon: Icons.playlist_add,
                         title: 'No Items Yet',
-                        subtitle:
-                            'Add existing test plans or one-off test cases.',
+                        subtitle: 'Add test plans to this release plan.',
                       )
                     : ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
                         padding: const EdgeInsets.all(16),
                         itemCount: plan.items.length,
                         onReorder: (oldIdx, newIdx) async {
@@ -124,53 +89,12 @@ class ReleasePlanDetailScreen extends ConsumerWidget {
                         },
                         itemBuilder: (ctx, i) {
                           final item = plan.items[i];
-                          return item.map(
-                            testPlanRef: (ref_) => Card(
-                              key: ValueKey(ref_.id),
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                leading: const CircleAvatar(
-                                    child: Icon(Icons.checklist)),
-                                title: Text(ref_.testPlanName),
-                                subtitle: const Text('Test Plan'),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    NumberedDragHandle(index: i),
-                                    IconButton(
-                                      icon: const Icon(
-                                          Icons.remove_circle_outline),
-                                      onPressed: () => ref
-                                          .read(releasePlansProvider.notifier)
-                                          .removeItem(plan.id, ref_.id),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            oneOff: (o) => Card(
-                              key: ValueKey(o.id),
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                leading: const CircleAvatar(
-                                    child: Icon(Icons.assignment)),
-                                title: Text(o.testCase.name),
-                                subtitle: const Text('One-off Test Case'),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    NumberedDragHandle(index: i),
-                                    IconButton(
-                                      icon: const Icon(
-                                          Icons.remove_circle_outline),
-                                      onPressed: () => ref
-                                          .read(releasePlansProvider.notifier)
-                                          .removeItem(plan.id, o.id),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                          return _ReleasePlanItemCard(
+                            key: ValueKey(item.id),
+                            item: item,
+                            index: i,
+                            releasePlanId: plan.id,
+                            testPlans: testPlans,
                           );
                         },
                       ),
@@ -223,23 +147,6 @@ class ReleasePlanDetailScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _addOneOffCase(
-      BuildContext context, WidgetRef ref, String releasePlanId) async {
-    final name = await showInputDialog(context,
-        title: 'One-off Test Case', label: 'Test Case Name');
-    if (name == null || name.isEmpty) return;
-    final now = DateTime.now();
-    final tc = TestCase(
-      id: _uuid.v4(),
-      name: name,
-      createdAt: now,
-      updatedAt: now,
-    );
-    await ref
-        .read(releasePlansProvider.notifier)
-        .addOneOffTestCase(releasePlanId, tc);
-  }
-
   Future<void> _startExecution(BuildContext context, WidgetRef ref,
       ReleasePlan plan, List<TestPlan> testPlans) async {
     // Ask for release version
@@ -276,5 +183,139 @@ class ReleasePlanDetailScreen extends ConsumerWidget {
           releaseVersion: version.isEmpty ? null : version,
         );
     if (context.mounted) context.go('/execution');
+  }
+}
+
+// ── Per-item card with numbered drag handle + expandable test cases ──────────
+class _ReleasePlanItemCard extends ConsumerStatefulWidget {
+  final ReleasePlanItem item;
+  final int index;
+  final String releasePlanId;
+  final List<TestPlan> testPlans;
+
+  const _ReleasePlanItemCard({
+    required super.key,
+    required this.item,
+    required this.index,
+    required this.releasePlanId,
+    required this.testPlans,
+  });
+
+  @override
+  ConsumerState<_ReleasePlanItemCard> createState() =>
+      _ReleasePlanItemCardState();
+}
+
+class _ReleasePlanItemCardState
+    extends ConsumerState<_ReleasePlanItemCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+
+    return widget.item.map(
+      testPlanRef: (ref_) {
+        // Look up the live test plan to show its test cases
+        final livePlan = widget.testPlans
+            .where((tp) => tp.id == ref_.testPlanId)
+            .firstOrNull;
+        final testCases = livePlan?.testCases ?? [];
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.only(left: 12, right: 4),
+                leading: NumberedDragHandle(index: widget.index),
+                title: Text(ref_.testPlanName),
+                subtitle: Text(
+                    '${testCases.length} test case${testCases.length != 1 ? 's' : ''}'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: AnimatedRotation(
+                        turns: _expanded ? 0.0 : 0.5,
+                        duration: const Duration(milliseconds: 200),
+                        child: const Icon(Icons.expand_more),
+                      ),
+                      tooltip: _expanded ? 'Collapse' : 'Show test cases',
+                      onPressed: () =>
+                          setState(() => _expanded = !_expanded),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      tooltip: 'Remove from release plan',
+                      onPressed: () => ref
+                          .read(releasePlansProvider.notifier)
+                          .removeItem(widget.releasePlanId, ref_.id),
+                    ),
+                  ],
+                ),
+              ),
+              if (_expanded) ...[
+                const Divider(height: 1),
+                if (testCases.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 16),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'No test cases in this plan.',
+                        style: textTheme.bodySmall
+                            ?.copyWith(color: colors.onSurfaceVariant),
+                      ),
+                    ),
+                  )
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: testCases.length,
+                    itemBuilder: (_, j) {
+                      final tc = testCases[j];
+                      return ListTile(
+                        dense: true,
+                        contentPadding:
+                            const EdgeInsets.only(left: 56, right: 16),
+                        leading: Text(
+                          '${j + 1}.',
+                          style: textTheme.bodySmall
+                              ?.copyWith(color: colors.onSurfaceVariant),
+                        ),
+                        title: Text(tc.name, style: textTheme.bodyMedium),
+                        subtitle: Text(
+                          '${tc.steps.length} test${tc.steps.length != 1 ? 's' : ''}',
+                          style: textTheme.bodySmall,
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ],
+          ),
+        );
+      },
+      oneOff: (o) => Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          contentPadding: const EdgeInsets.only(left: 12, right: 4),
+          leading: NumberedDragHandle(index: widget.index),
+          title: Text(o.testCase.name),
+          subtitle: const Text('One-off Test Case'),
+          trailing: IconButton(
+            icon: const Icon(Icons.remove_circle_outline),
+            tooltip: 'Remove from release plan',
+            onPressed: () => ref
+                .read(releasePlansProvider.notifier)
+                .removeItem(widget.releasePlanId, o.id),
+          ),
+        ),
+      ),
+    );
   }
 }

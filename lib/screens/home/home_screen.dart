@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../utils/date_utils.dart';
+import '../../widgets/common/dialogs.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -162,17 +163,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               FilledButton.icon(
                 icon: const Icon(Icons.add),
                 label: const Text('New Test Plan'),
-                onPressed: () => context.go('/test-plans'),
+                onPressed: () => _quickNewTestPlan(context),
               ),
               FilledButton.tonalIcon(
                 icon: const Icon(Icons.add),
                 label: const Text('New Release Plan'),
-                onPressed: () => context.go('/release-plans'),
+                onPressed: () => _quickNewReleasePlan(context),
               ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.upload_file),
-                label: const Text('Import Excel Results'),
-                onPressed: () => context.go('/results'),
+              FilledButton.tonalIcon(
+                icon: const Icon(Icons.play_circle_outline),
+                label: const Text('Execute Release Plan'),
+                onPressed: () => _quickExecuteReleasePlan(context),
               ),
             ],
           ),
@@ -198,6 +199,73 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _quickNewTestPlan(BuildContext context) async {
+    final name = await showInputDialog(context,
+        title: 'New Test Plan', label: 'Plan Name');
+    if (name == null || name.isEmpty) return;
+    final id = await ref.read(testPlansProvider.notifier).addTestPlan(name, '');
+    if (context.mounted) context.go('/test-plans/$id');
+  }
+
+  Future<void> _quickNewReleasePlan(BuildContext context) async {
+    final name = await showInputDialog(context,
+        title: 'New Release Plan', label: 'Product Name');
+    if (name == null || name.isEmpty) return;
+    final id =
+        await ref.read(releasePlansProvider.notifier).addReleasePlan(name, '');
+    if (context.mounted) context.go('/release-plans/$id');
+  }
+
+  Future<void> _quickExecuteReleasePlan(BuildContext context) async {
+    final plans = ref.read(releasePlansProvider).valueOrNull ?? [];
+    if (plans.isEmpty) {
+      // No plans yet — offer to create one first.
+      final name = await showInputDialog(context,
+          title: 'New Release Plan', label: 'Product Name');
+      if (name == null || name.isEmpty) return;
+      final id = await ref
+          .read(releasePlansProvider.notifier)
+          .addReleasePlan(name, '');
+      if (context.mounted) context.go('/release-plans/$id');
+      return;
+    }
+    // One plan — go straight to it; multiple — show picker.
+    if (plans.length == 1) {
+      if (context.mounted) context.go('/release-plans/${plans.first.id}');
+      return;
+    }
+    if (!context.mounted) return;
+    final picked = await showDialog<ReleasePlan>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Select Release Plan'),
+        content: SizedBox(
+          width: 400,
+          child: ListView(
+            shrinkWrap: true,
+            children: plans
+                .map((p) => ListTile(
+                      leading: const Icon(Icons.rocket_launch),
+                      title: Text(p.productName),
+                      subtitle: Text(
+                          '${p.items.length} item${p.items.length != 1 ? 's' : ''}'),
+                      onTap: () => Navigator.pop(ctx, p),
+                    ))
+                .toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel')),
+        ],
+      ),
+    );
+    if (picked != null && context.mounted) {
+      context.go('/release-plans/${picked.id}');
+    }
   }
 
   String _recentPassRate(List<TestRun> runs) {

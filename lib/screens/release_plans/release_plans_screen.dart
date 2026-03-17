@@ -12,6 +12,7 @@ class ReleasePlansScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plansAsync = ref.watch(releasePlansProvider);
+    final testRunsAsync = ref.watch(testRunsProvider);
 
     return Scaffold(
       body: Column(
@@ -39,7 +40,12 @@ class ReleasePlansScreen extends ConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (plans) {
-                if (plans.isEmpty) {
+                final savedRuns = (testRunsAsync.valueOrNull ?? [])
+                    .where((r) => !r.isComplete)
+                    .toList()
+                  ..sort((a, b) => b.executedAt.compareTo(a.executedAt));
+
+                if (plans.isEmpty && savedRuns.isEmpty) {
                   return EmptyState(
                     icon: Icons.rocket_launch_outlined,
                     title: 'No Release Plans Yet',
@@ -49,43 +55,105 @@ class ReleasePlansScreen extends ConsumerWidget {
                     onAction: () => _createReleasePlan(context, ref),
                   );
                 }
-                return ListView.builder(
+
+                return ListView(
                   padding: const EdgeInsets.all(16),
-                  itemCount: plans.length,
-                  itemBuilder: (ctx, i) {
-                    final plan = plans[i];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: const CircleAvatar(
-                            child: Icon(Icons.rocket_launch)),
-                        title: Text(plan.productName),
-                        subtitle: Text(
-                            '${plan.items.length} item${plan.items.length != 1 ? 's' : ''} · ${plan.updatedAt.toDisplayDate()}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () async {
-                                final ok = await showConfirmDialog(context,
-                                    title: 'Delete Release Plan',
-                                    content:
-                                        'Delete "${plan.productName}"? This cannot be undone.');
-                                if (ok) {
-                                  await ref
-                                      .read(releasePlansProvider.notifier)
-                                      .deleteReleasePlan(plan.id);
-                                }
-                              },
-                            ),
-                            const Icon(Icons.chevron_right),
-                          ],
+                  children: [
+                    // ── Saved Runs ──────────────────────────────────────────
+                    if (savedRuns.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Saved Runs',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                        onTap: () => context.go('/release-plans/${plan.id}'),
                       ),
-                    );
-                  },
+                      ...savedRuns.map((run) => Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: const CircleAvatar(
+                                  child: Icon(Icons.play_circle_outline)),
+                              title: Text(run.name),
+                              subtitle: Text(
+                                  '${run.runSteps} of ${run.totalSteps} steps completed · ${run.executedAt.toDisplayDate()}'),
+                              trailing: FilledButton.tonal(
+                                onPressed: () {
+                                  final allPlans = ref
+                                          .read(testPlansProvider)
+                                          .valueOrNull ??
+                                      [];
+                                  ref
+                                      .read(executionProvider.notifier)
+                                      .resumeSavedRun(
+                                        run: run,
+                                        allTestPlans: allPlans,
+                                      );
+                                  context.go('/execution');
+                                },
+                                child: const Text('Resume'),
+                              ),
+                            ),
+                          )),
+                      const Divider(height: 24),
+                    ],
+
+                    // ── Release Plans (Start New Run) ────────────────────────
+                    if (savedRuns.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Start New Run',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    if (plans.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text('No release plans yet.'),
+                        ),
+                      )
+                    else
+                      ...plans.map((plan) => Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: const CircleAvatar(
+                                  child: Icon(Icons.rocket_launch)),
+                              title: Text(plan.productName),
+                              subtitle: Text(
+                                  '${plan.items.length} item${plan.items.length != 1 ? 's' : ''} · ${plan.updatedAt.toDisplayDate()}'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline),
+                                    onPressed: () async {
+                                      final ok = await showConfirmDialog(
+                                          context,
+                                          title: 'Delete Release Plan',
+                                          content:
+                                              'Delete "${plan.productName}"? This cannot be undone.');
+                                      if (ok) {
+                                        await ref
+                                            .read(releasePlansProvider.notifier)
+                                            .deleteReleasePlan(plan.id);
+                                      }
+                                    },
+                                  ),
+                                  const Icon(Icons.chevron_right),
+                                ],
+                              ),
+                              onTap: () =>
+                                  context.go('/release-plans/${plan.id}'),
+                            ),
+                          )),
+                  ],
                 );
               },
             ),

@@ -1,7 +1,6 @@
 import 'dart:convert' show jsonDecode, jsonEncode, utf8;
 import 'dart:developer' as dev;
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:macos_secure_bookmarks/macos_secure_bookmarks.dart';
 import 'package:path/path.dart' as p;
@@ -25,9 +24,9 @@ class StorageService {
   static const _prefKeyReleasePlans = 'release_plans';
   static const _prefKeyTestRuns = 'test_runs';
 
-  static const _fileTestPlans = 'test_plans.json';
+  static const _fileTestPlans = 'test_plans/test_plans.json';
   static const _fileReleasePlans = 'release_plans.json';
-  static const _fileTestRuns = 'test_runs.json';
+  static const _fileTestRuns = 'test_runs/test_runs.json';
 
   // Only initialised on macOS; null on other platforms.
   final SecureBookmarks? _bookmarks =
@@ -125,9 +124,9 @@ class StorageService {
           '[StorageService] _writeFile skipped — no folder open (fileName=$fileName)');
       return;
     }
-    final dir = Directory(_folderPath);
-    if (!await dir.exists()) await dir.create(recursive: true);
     final path = p.join(_folderPath, fileName);
+    final parentDir = Directory(p.dirname(path));
+    if (!await parentDir.exists()) await parentDir.create(recursive: true);
     dev.log('[StorageService] writing $path (${content.length} bytes)');
     await File(path).writeAsString(content);
   }
@@ -149,6 +148,16 @@ class StorageService {
   // ── Test Plans ──────────────────────────────────────────────────────────────
 
   Future<List<TestPlan>> loadTestPlans() async {
+    // One-time migration from legacy flat path.
+    if (hasFolderOpen) {
+      final legacy = File(p.join(_folderPath, 'test_plans.json'));
+      final newFile = File(p.join(_folderPath, _fileTestPlans));
+      if (await legacy.exists() && !await newFile.exists()) {
+        await newFile.parent.create(recursive: true);
+        await legacy.copy(newFile.path);
+        dev.log('[StorageService] migrated test_plans.json → $_fileTestPlans');
+      }
+    }
     final raw = await _read(_prefKeyTestPlans, _fileTestPlans);
     if (raw == null || raw.isEmpty) return [];
     return (jsonDecode(raw) as List)
@@ -179,6 +188,16 @@ class StorageService {
   // ── Test Runs ───────────────────────────────────────────────────────────────
 
   Future<List<TestRun>> loadTestRuns() async {
+    // One-time migration from legacy flat path.
+    if (hasFolderOpen) {
+      final legacy = File(p.join(_folderPath, 'test_runs.json'));
+      final newFile = File(p.join(_folderPath, _fileTestRuns));
+      if (await legacy.exists() && !await newFile.exists()) {
+        await newFile.parent.create(recursive: true);
+        await legacy.copy(newFile.path);
+        dev.log('[StorageService] migrated test_runs.json → $_fileTestRuns');
+      }
+    }
     final raw = await _read(_prefKeyTestRuns, _fileTestRuns);
     if (raw == null || raw.isEmpty) return [];
     return (jsonDecode(raw) as List)
@@ -193,11 +212,23 @@ class StorageService {
 
   // ── Excel Export ─────────────────────────────────────────────────────────────
 
+  /// Strips characters unsafe for folder names.
+  String _safeFolderName(String s) => s
+      .replaceAll(RegExp(r'[^\w\s-]'), '')
+      .replaceAll(RegExp(r'\s+'), '_')
+      .trim();
+
   Future<void> exportTestRunToExcel(TestRun run) async {
     final bytes = ExcelService.generateTestRunExcel(run);
     final fileName = '${run.name}.xlsx';
     if (hasFolderOpen) {
-      final file = File(p.join(_folderPath, fileName));
+      // Organise under test_runs/{releasePlanName}/
+      final releaseDir = _safeFolderName(
+          run.sourceName.isNotEmpty ? run.sourceName : 'unknown');
+      final dir =
+          Directory(p.join(_folderPath, 'test_runs', releaseDir));
+      if (!await dir.exists()) await dir.create(recursive: true);
+      final file = File(p.join(dir.path, fileName));
       await file.writeAsBytes(bytes);
     } else {
       // Prompt user to save via file picker

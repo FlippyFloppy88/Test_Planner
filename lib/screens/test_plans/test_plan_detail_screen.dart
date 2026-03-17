@@ -87,6 +87,7 @@ class TestPlanDetailScreen extends ConsumerWidget {
                         onAction: () => _addTestCase(context, ref, plan.id),
                       )
                     : ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
                         padding: const EdgeInsets.all(16),
                         itemCount: plan.testCases.length,
                         onReorder: (oldIdx, newIdx) async {
@@ -97,40 +98,11 @@ class TestPlanDetailScreen extends ConsumerWidget {
                         },
                         itemBuilder: (ctx, i) {
                           final tc = plan.testCases[i];
-                          return Card(
+                          return _TestCaseCard(
                             key: ValueKey(tc.id),
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: const CircleAvatar(
-                                  child: Icon(Icons.assignment)),
-                              title: Text(tc.name),
-                              subtitle: Text(
-                                  '${tc.steps.length} step${tc.steps.length != 1 ? 's' : ''} · ${tc.updatedAt.toDisplayDate()}'),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  NumberedDragHandle(index: i),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline),
-                                    onPressed: () async {
-                                      final ok = await showConfirmDialog(
-                                          context,
-                                          title: 'Delete Test Case',
-                                          content:
-                                              'Delete "${tc.name}"? This cannot be undone.');
-                                      if (ok) {
-                                        await ref
-                                            .read(testPlansProvider.notifier)
-                                            .deleteTestCase(plan.id, tc.id);
-                                      }
-                                    },
-                                  ),
-                                  const Icon(Icons.chevron_right),
-                                ],
-                              ),
-                              onTap: () => context
-                                  .go('/test-plans/${plan.id}/case/${tc.id}'),
-                            ),
+                            tc: tc,
+                            index: i,
+                            planId: plan.id,
                           );
                         },
                       ),
@@ -158,5 +130,126 @@ class TestPlanDetailScreen extends ConsumerWidget {
           existingRuns: existingRuns,
         );
     if (context.mounted) context.go('/execution');
+  }
+}
+
+// ── Per-test-case card with numbered drag handle + expandable tests list ─────
+class _TestCaseCard extends ConsumerStatefulWidget {
+  final TestCase tc;
+  final int index;
+  final String planId;
+
+  const _TestCaseCard({
+    required super.key,
+    required this.tc,
+    required this.index,
+    required this.planId,
+  });
+
+  @override
+  ConsumerState<_TestCaseCard> createState() => _TestCaseCardState();
+}
+
+class _TestCaseCardState extends ConsumerState<_TestCaseCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final tc = widget.tc;
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.only(left: 12, right: 4),
+            leading: NumberedDragHandle(index: widget.index),
+            title: Text(tc.name),
+            subtitle: Text(
+              '${tc.steps.length} test${tc.steps.length != 1 ? 's' : ''} · ${tc.updatedAt.toDisplayDate()}',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Expand/collapse tests
+                IconButton(
+                  icon: AnimatedRotation(
+                    turns: _expanded ? 0.0 : 0.5,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.expand_more),
+                  ),
+                  tooltip: _expanded ? 'Collapse' : 'Show tests',
+                  onPressed: () => setState(() => _expanded = !_expanded),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.open_in_new),
+                  tooltip: 'Open test case',
+                  onPressed: () =>
+                      context.go('/test-plans/${widget.planId}/case/${tc.id}'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Delete',
+                  onPressed: _onDelete,
+                ),
+              ],
+            ),
+            onTap: () =>
+                context.go('/test-plans/${widget.planId}/case/${tc.id}'),
+          ),
+
+          // ── Expanded tests list ─────────────────────────────────────
+          if (_expanded) ...[
+            const Divider(height: 1),
+            if (tc.steps.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    vertical: 10, horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'No tests yet — open the test case to add some.',
+                    style: textTheme.bodySmall
+                        ?.copyWith(color: colors.onSurfaceVariant),
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: tc.steps.length,
+                itemBuilder: (_, j) {
+                  final step = tc.steps[j];
+                  return ListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.only(left: 56, right: 16),
+                    leading: Text(
+                      '${j + 1}.',
+                      style: textTheme.bodySmall
+                          ?.copyWith(color: colors.onSurfaceVariant),
+                    ),
+                    title: Text(step.name,
+                        style: textTheme.bodyMedium),
+                  );
+                },
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onDelete() async {
+    final ok = await showConfirmDialog(context,
+        title: 'Delete Test Case',
+        content: 'Delete "${widget.tc.name}"? This cannot be undone.');
+    if (ok && mounted) {
+      await ref
+          .read(testPlansProvider.notifier)
+          .deleteTestCase(widget.planId, widget.tc.id);
+    }
   }
 }

@@ -17,17 +17,19 @@ class ReleasePlansNotifier extends AsyncNotifier<List<ReleasePlan>> {
     state = AsyncData(plans);
   }
 
-  Future<void> addReleasePlan(String productName, String description) async {
+  Future<String> addReleasePlan(String productName, String description) async {
     final plans = List<ReleasePlan>.from(state.valueOrNull ?? []);
     final now = DateTime.now();
+    final id = _uuid.v4();
     plans.add(ReleasePlan(
-      id: _uuid.v4(),
+      id: id,
       productName: productName,
       description: description,
       createdAt: now,
       updatedAt: now,
     ));
     await _save(plans);
+    return id;
   }
 
   Future<void> updateReleasePlan(ReleasePlan updated) async {

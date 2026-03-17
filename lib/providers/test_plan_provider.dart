@@ -19,17 +19,19 @@ class TestPlansNotifier extends AsyncNotifier<List<TestPlan>> {
     state = AsyncData(plans);
   }
 
-  Future<void> addTestPlan(String name, String description) async {
+  Future<String> addTestPlan(String name, String description) async {
     final plans = List<TestPlan>.from(state.valueOrNull ?? []);
     final now = DateTime.now();
+    final id = _uuid.v4();
     plans.add(TestPlan(
-      id: _uuid.v4(),
+      id: id,
       name: name,
       description: description,
       createdAt: now,
       updatedAt: now,
     ));
     await _save(plans);
+    return id;
   }
 
   Future<void> updateTestPlan(TestPlan updated) async {
@@ -52,8 +54,8 @@ class TestPlansNotifier extends AsyncNotifier<List<TestPlan>> {
       slug = slug.replaceAll(RegExp(r'[^\w\s-]'), '');
       slug = slug.replaceAll(RegExp(r'\s+'), '_').trim();
       // Remove plan folder and any per-plan JSON (best-effort).
-      await ref.read(storageServiceProvider).deleteRelativeFolder(slug);
-      await ref.read(storageServiceProvider).deleteFileIfExists('$slug.json');
+      await ref.read(storageServiceProvider).deleteRelativeFolder('test_plans/$slug');
+      await ref.read(storageServiceProvider).deleteFileIfExists('test_plans/$slug.json');
     }
 
     final plans = (state.valueOrNull ?? []).where((p) => p.id != id).toList();
@@ -103,6 +105,27 @@ class TestPlansNotifier extends AsyncNotifier<List<TestPlan>> {
     if (idx == -1) return;
     plans[idx] = plans[idx].copyWith(
       testCases: plans[idx].testCases.where((c) => c.id != caseId).toList(),
+      updatedAt: DateTime.now(),
+    );
+    await _save(plans);
+  }
+
+  Future<void> moveTestCase(
+      String fromPlanId, String caseId, String toPlanId) async {
+    if (fromPlanId == toPlanId) return;
+    final plans = List<TestPlan>.from(state.valueOrNull ?? []);
+    final fromIdx = plans.indexWhere((p) => p.id == fromPlanId);
+    final toIdx = plans.indexWhere((p) => p.id == toPlanId);
+    if (fromIdx == -1 || toIdx == -1) return;
+    final tc =
+        plans[fromIdx].testCases.firstWhere((c) => c.id == caseId);
+    plans[fromIdx] = plans[fromIdx].copyWith(
+      testCases:
+          plans[fromIdx].testCases.where((c) => c.id != caseId).toList(),
+      updatedAt: DateTime.now(),
+    );
+    plans[toIdx] = plans[toIdx].copyWith(
+      testCases: [...plans[toIdx].testCases, tc],
       updatedAt: DateTime.now(),
     );
     await _save(plans);

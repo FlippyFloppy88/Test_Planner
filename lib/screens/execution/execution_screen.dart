@@ -53,6 +53,7 @@ class ExecutionScreen extends ConsumerWidget {
             caseIndex: session.currentCaseIndex,
             totalCases: session.caseGroups.length,
             onEndRun: () => _confirmEndRun(context, ref),
+            onSaveRun: () => _saveRun(context, ref),
           ),
           Expanded(
             child: Row(
@@ -102,6 +103,29 @@ class ExecutionScreen extends ConsumerWidget {
     );
     if (ok == true) ref.read(executionProvider.notifier).completeRun();
   }
+
+  Future<void> _saveRun(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Save Run?'),
+        content: const Text(
+            'Your progress will be saved. Resume later from the Release Plans page.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await ref.read(executionProvider.notifier).saveCurrentRun();
+      if (context.mounted) context.go('/release-plans');
+    }
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -111,12 +135,14 @@ class _ExecutionHeader extends StatelessWidget {
   final int caseIndex;
   final int totalCases;
   final VoidCallback onEndRun;
+  final VoidCallback onSaveRun;
 
   const _ExecutionHeader({
     required this.runName,
     required this.caseIndex,
     required this.totalCases,
     required this.onEndRun,
+    required this.onSaveRun,
   });
 
   @override
@@ -141,6 +167,12 @@ class _ExecutionHeader extends StatelessWidget {
                   ],
                 ),
               ),
+              TextButton.icon(
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('Save Run'),
+                onPressed: onSaveRun,
+              ),
+              const SizedBox(width: 4),
               TextButton.icon(
                 icon: const Icon(Icons.stop),
                 label: const Text('End Run'),
@@ -231,7 +263,7 @@ class _TestCasePage extends ConsumerStatefulWidget {
 }
 
 class _TestCasePageState extends ConsumerState<_TestCasePage> {
-  bool _precondExpanded = false;
+  bool _precondExpanded = true;
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +277,49 @@ class _TestCasePageState extends ConsumerState<_TestCasePage> {
         children: [
           Text(group.testCaseName,
               style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+
+          // Description
+          if (group.description.isNotEmpty) ...[
+            Text('Description',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text(
+              group.description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color:
+                        Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Jira / Story Links
+          if (group.jiraLinks.isNotEmpty) ...[
+            Text('Jira / Story Links',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: group.jiraLinks
+                  .map((link) => ActionChip(
+                        avatar: const Icon(Icons.link, size: 14),
+                        label: Text(link,
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis),
+                        onPressed: () => launchUrl(Uri.parse(link)),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 12),
+          ],
 
           // Preconditions
           if (group.preconditions.isNotEmpty) ...[
@@ -263,7 +337,7 @@ class _TestCasePageState extends ConsumerState<_TestCasePage> {
                             ?.copyWith(fontWeight: FontWeight.w600)),
                     const Spacer(),
                     Icon(
-                      _precondExpanded ? Icons.expand_less : Icons.expand_more,
+                      _precondExpanded ? Icons.expand_more : Icons.expand_less,
                       size: 18,
                       color: Theme.of(context).colorScheme.primary,
                     ),
@@ -280,8 +354,8 @@ class _TestCasePageState extends ConsumerState<_TestCasePage> {
             const SizedBox(height: 8),
           ],
 
-          // Steps header
-          Text('Steps',
+          // Tests header
+          Text('Tests',
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
@@ -361,7 +435,7 @@ class _StepRowState extends State<_StepRow> {
       return;
     }
     final er = widget.result.expectedResult;
-    if (er.answerType == AnswerType.none) {
+    if (er.answerType == AnswerType.none && widget.result.procedure.isEmpty) {
       widget.onUpdate(widget.result.copyWith(status: StepResultStatus.passed));
     } else {
       _showResultDialog();
@@ -392,6 +466,13 @@ class _StepRowState extends State<_StepRow> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (widget.result.procedure.isNotEmpty) ...[
+                    _ProcedureView(
+                      items: widget.result.procedure,
+                      storageFolderPath: widget.storageFolderPath,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   if (er.description.isNotEmpty) ...[
                     Container(
                       width: double.infinity,
@@ -682,8 +763,8 @@ class _StepRowState extends State<_StepRow> {
                   IconButton(
                     icon: Icon(
                       _procedureExpanded
-                          ? Icons.expand_less
-                          : Icons.expand_more,
+                          ? Icons.expand_more
+                          : Icons.expand_less,
                       size: 18,
                     ),
                     onPressed: () => setState(
@@ -837,22 +918,6 @@ class _ProcedureView extends StatelessWidget {
                     )),
                   ],
                 ),
-                if (item.attachments.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4, left: 20),
-                    child: Wrap(
-                      spacing: 6,
-                      children: item.attachments
-                          .map((att) => ActionChip(
-                                avatar: const Icon(Icons.photo, size: 14),
-                                label: Text(att.fileName,
-                                    style: const TextStyle(fontSize: 11)),
-                                onPressed: () =>
-                                    _showImagePreview(context, att),
-                              ))
-                          .toList(),
-                    ),
-                  ),
               ],
             ),
           );
