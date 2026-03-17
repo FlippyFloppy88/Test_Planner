@@ -616,7 +616,7 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
               const Spacer(),
             TextButton.icon(
               icon: const Icon(Icons.add, size: 16),
-              label: const Text('Add Item'),
+              label: const Text('Add Step'),
               onPressed: _addItem,
             ),
           ],
@@ -625,13 +625,14 @@ class _ProcedureWidgetState extends State<ProcedureWidget> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              'No items yet. Click "Add Item" to start.',
+              'No steps yet. Click "Add Step" to start.',
               style:
                   textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
             ),
           )
         else
           ReorderableListView.builder(
+            buildDefaultDragHandles: false,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: widget.items.length,
@@ -754,115 +755,120 @@ class _ProcedureItemRowState extends State<_ProcedureItemRow> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 8, right: 8),
-            child: NumberedDragHandle(index: widget.index),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Edit mode: show TextField and Save / Cancel actions.
-                if (editing)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextField(
-                        controller: widget.controller,
-                        focusNode: widget.focusNode,
-                        decoration: InputDecoration(
-                          hintText: widget.hint,
-                          isDense: true,
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.image_outlined, size: 18),
-                            tooltip: 'Insert image',
-                            onPressed: widget.onPickImage,
-                          ),
-                        ),
-                        maxLines: null,
-                        onChanged: widget.onTextChanged,
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
+          // Main row: drag handle | content | delete button.
+          // Thumbnails are intentionally outside this Row so the handle and
+          // delete button vertically center against only the text, not images.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: NumberedDragHandle(index: widget.index),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Edit mode: show TextField and Save / Cancel actions.
+                    if (editing)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          FilledButton.icon(
-                            icon: const Icon(Icons.check),
-                            label: const Text('Save'),
-                            onPressed: widget.onSave,
-                          ),
-                          const SizedBox(width: 8),
-                          OutlinedButton.icon(
-                            icon: const Icon(Icons.close),
-                            label: const Text('Cancel'),
-                            onPressed: widget.onCancel,
-                          ),
-                        ],
-                      ),
-                    ],
-                  )
-                else
-                  GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: widget.onEnterEdit,
-                    child: ProcedureText(
-                      text: widget.item.text,
-                      attachments: widget.item.attachments,
-                      onAttachmentTap: widget.onShowImage,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-
-                // Attachment thumbnails (include staged attachments while editing)
-                if (combinedAttachments.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: combinedAttachments.map((att) {
-                        final absPath = att.filePath.isNotEmpty && widget.storageFolderPath.isNotEmpty
-                            ? p.join(widget.storageFolderPath, att.filePath)
-                            : null;
-                        final imageFile = absPath != null ? File(absPath) : null;
-                        return Tooltip(
-                          message: att.fileName,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(6),
-                            onTap: () => widget.onShowImage(att),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: SizedBox(
-                                width: 72,
-                                height: 72,
-                                child: (imageFile != null && imageFile.existsSync())
-                                    ? Image.file(imageFile, fit: BoxFit.cover)
-                                    : Container(
-                                        color: Colors.grey.shade200,
-                                        child: const Icon(Icons.broken_image, size: 32),
-                                      ),
+                          TextField(
+                            controller: widget.controller,
+                            focusNode: widget.focusNode,
+                            decoration: InputDecoration(
+                              hintText: widget.hint,
+                              isDense: true,
+                              border: const OutlineInputBorder(),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.image_outlined, size: 18),
+                                tooltip: 'Insert image',
+                                onPressed: widget.onPickImage,
                               ),
                             ),
+                            maxLines: null,
+                            onChanged: widget.onTextChanged,
                           ),
-                        );
-                      }).toList(),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              FilledButton.icon(
+                                icon: const Icon(Icons.check),
+                                label: const Text('Save'),
+                                onPressed: widget.onSave,
+                              ),
+                              const SizedBox(width: 8),
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.close),
+                                label: const Text('Cancel'),
+                                onPressed: widget.onCancel,
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    else
+                      GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: widget.onEnterEdit,
+                        child: ProcedureText(
+                          text: widget.item.text,
+                          attachments: widget.item.attachments,
+                          onAttachmentTap: widget.onShowImage,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.remove_circle_outline, size: 20),
+                color: colors.error,
+                onPressed: widget.onDelete,
+                tooltip: 'Remove item',
+              ),
+            ],
+          ),
+          // Attachment thumbnails below the row, indented to align with text.
+          // (left: 36 = handle width 28 + right padding 8)
+          if (combinedAttachments.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 36, top: 8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: combinedAttachments.map((att) {
+                  final absPath = att.filePath.isNotEmpty && widget.storageFolderPath.isNotEmpty
+                      ? p.join(widget.storageFolderPath, att.filePath)
+                      : null;
+                  final imageFile = absPath != null ? File(absPath) : null;
+                  return Tooltip(
+                    message: att.fileName,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(6),
+                      onTap: () => widget.onShowImage(att),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: SizedBox(
+                          width: 72,
+                          height: 72,
+                          child: (imageFile != null && imageFile.existsSync())
+                              ? Image.file(imageFile, fit: BoxFit.cover)
+                              : Container(
+                                  color: Colors.grey.shade200,
+                                  child: const Icon(Icons.broken_image, size: 32),
+                                ),
+                        ),
+                      ),
                     ),
-                  ),
-              ],
+                  );
+                }).toList(),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 6, left: 4),
-            child: IconButton(
-              icon: const Icon(Icons.remove_circle_outline, size: 20),
-              color: colors.error,
-              onPressed: widget.onDelete,
-              tooltip: 'Remove item',
-            ),
-          ),
         ],
       ),
     );

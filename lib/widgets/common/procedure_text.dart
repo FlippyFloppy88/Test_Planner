@@ -55,6 +55,9 @@ class ProcedureText extends StatelessWidget {
       spans.add(TextSpan(text: text.substring(last), style: defaultStyle));
     }
 
-    return RichText(text: TextSpan(children: spans));
+    return RichText(
+      textAlign: TextAlign.start,
+      text: TextSpan(children: spans),
+    );
   }
 }

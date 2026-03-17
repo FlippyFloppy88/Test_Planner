@@ -1,10 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
-import '../../services/storage_service.dart';
 import '../../widgets/test_step/test_step_editor.dart';
 import '../../widgets/common/procedure_widget.dart';
 
@@ -40,6 +40,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
   List<String> _jiraLinks = [];
   String _planImageFolder = '';
   bool _dirty = false;
+  Timer? _autoSaveTimer;
   bool _descExpanded = false;
   bool _precondExpanded = false;
   bool _jiraExpanded = false;
@@ -52,8 +53,21 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
     _jiraInputCtrl = TextEditingController();
   }
 
+  /// Sets dirty and starts a 10-second auto-save timer if one isn't already
+  /// running. Subsequent changes while the timer is active do nothing — the
+  /// existing countdown continues uninterrupted.
+  void _markDirty() {
+    if (!_dirty) setState(() => _dirty = true);
+    if (_autoSaveTimer == null || !_autoSaveTimer!.isActive) {
+      _autoSaveTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted && _dirty) _save(silent: true);
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _autoSaveTimer?.cancel();
     _nameCtrl.dispose();
     _descCtrl.dispose();
     _jiraInputCtrl.dispose();
@@ -95,7 +109,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
     }
   }
 
-  Future<void> _save() async {
+  Future<void> _save({bool silent = false}) async {
     _syncJiraLinksFromSteps();
     final plans = ref.read(testPlansProvider).valueOrNull ?? [];
     final plan = plans.firstWhere((p) => p.id == widget.planId);
@@ -112,8 +126,10 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
         .read(testPlansProvider.notifier)
         .updateTestCase(widget.planId, updated);
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Test case saved.')));
+      if (!silent) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Test case saved.')));
+      }
       setState(() => _dirty = false);
     }
   }
@@ -125,12 +141,13 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
         TestStep(
           id: _uuid.v4(),
           order: (_steps?.length ?? 0) + 1,
-          name: 'Step ${(_steps?.length ?? 0) + 1}',
+          name: 'Test ${(_steps?.length ?? 0) + 1}',
           expectedResult: const ExpectedResult(),
         ),
       ];
       _dirty = true;
     });
+    _markDirty();
   }
 
   void _updateStep(int index, TestStep updated) {
@@ -141,6 +158,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
       _dirty = true;
       _syncJiraLinksFromSteps();
     });
+    _markDirty();
   }
 
   void _deleteStep(int index) {
@@ -148,6 +166,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
       _steps = List<TestStep>.from(_steps!)..removeAt(index);
       _dirty = true;
     });
+    _markDirty();
   }
 
   void _addJiraLink() {
@@ -158,6 +177,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
       _jiraInputCtrl.clear();
       _dirty = true;
     });
+    _markDirty();
   }
 
   void _removeJiraLink(String link) {
@@ -165,6 +185,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
       _jiraLinks = _jiraLinks.where((l) => l != link).toList();
       _dirty = true;
     });
+    _markDirty();
   }
 
   @override
@@ -256,7 +277,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                           controller: _nameCtrl,
                           decoration: const InputDecoration(
                               labelText: 'Test Case Name *'),
-                          onChanged: (_) => setState(() => _dirty = true),
+                          onChanged: (_) => _markDirty(),
                         ),
                         const SizedBox(height: 16),
 
@@ -272,7 +293,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                                 labelText: 'Description (optional)',
                                 border: OutlineInputBorder()),
                             maxLines: 4,
-                            onChanged: (_) => setState(() => _dirty = true),
+                            onChanged: (_) => _markDirty(),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -288,10 +309,10 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                             // final tcName unused; keep test case name available elsewhere
                             return ProcedureWidget(
                               items: _preconditions,
-                              onChanged: (items) => setState(() {
-                                _preconditions = items;
-                                _dirty = true;
-                              }),
+                              onChanged: (items) {
+                                setState(() => _preconditions = items);
+                                _markDirty();
+                              },
                               storageFolderPath: storage.hasFolderOpen
                                   ? storage.folderPath
                                   : '',
@@ -313,15 +334,15 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // ── Test Steps ───────────────────────────────────
+                        // ── Tests ────────────────────────────────────────
                         Row(
                           children: [
-                            Text('Test Steps',
+                            Text('Tests',
                                 style: Theme.of(context).textTheme.titleMedium),
                             const Spacer(),
                             FilledButton.tonalIcon(
                               icon: const Icon(Icons.add),
-                              label: const Text('Add Step'),
+                              label: const Text('Add Test'),
                               onPressed: _addStep,
                             ),
                           ],
@@ -330,6 +351,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
 
                         if (_steps != null && _steps!.isNotEmpty)
                           ReorderableListView.builder(
+                            buildDefaultDragHandles: false,
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: _steps!.length,
@@ -342,6 +364,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                                 _steps = s;
                                 _dirty = true;
                               });
+                              _markDirty();
                             },
                             itemBuilder: (ctx, i) {
                               final storage = ref.read(storageServiceProvider);
@@ -372,11 +395,11 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                                   const Icon(Icons.list_alt,
                                       size: 48, color: Colors.grey),
                                   const SizedBox(height: 8),
-                                  const Text('No steps yet'),
+                                  const Text('No tests yet'),
                                   const SizedBox(height: 16),
                                   OutlinedButton.icon(
                                     icon: const Icon(Icons.add),
-                                    label: const Text('Add First Step'),
+                                    label: const Text('Add First Test'),
                                     onPressed: _addStep,
                                   ),
                                 ],

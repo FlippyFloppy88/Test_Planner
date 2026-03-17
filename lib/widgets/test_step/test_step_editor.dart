@@ -92,7 +92,7 @@ class _TestStepEditorState extends State<TestStepEditor> {
     final sub = TestStep(
       id: _uuid.v4(),
       order: widget.step.subSteps.length + 1,
-      name: 'Sub-step ${widget.step.subSteps.length + 1}',
+      name: 'Sub-test ${widget.step.subSteps.length + 1}',
       expectedResult: const ExpectedResult(),
     );
     _emit(widget.step.copyWith(subSteps: [...widget.step.subSteps, sub]));
@@ -123,7 +123,7 @@ class _TestStepEditorState extends State<TestStepEditor> {
             ListTile(
               leading: NumberedDragHandle(index: widget.stepIndex),
               title: Text(
-                widget.step.name.isEmpty ? 'Unnamed Step' : widget.step.name,
+                widget.step.name.isEmpty ? 'Unnamed Test' : widget.step.name,
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               trailing: Row(
@@ -153,7 +153,7 @@ class _TestStepEditorState extends State<TestStepEditor> {
                     TextField(
                       controller: _nameCtrl,
                       decoration: const InputDecoration(
-                          labelText: 'Step Name *', isDense: true),
+                          labelText: 'Test Name *', isDense: true),
                       onChanged: (_) => _onFieldChanged(),
                     ),
                     const SizedBox(height: 16),
@@ -186,18 +186,19 @@ class _TestStepEditorState extends State<TestStepEditor> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        Text('Sub-steps',
+                        Text('Sub-tests',
                             style: Theme.of(context).textTheme.labelLarge),
                         const Spacer(),
                         TextButton.icon(
                           icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Add Sub-step'),
+                          label: const Text('Add Sub-test'),
                           onPressed: _addSubStep,
                         ),
                       ],
                     ),
                     if (widget.step.subSteps.isNotEmpty)
                       ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: widget.step.subSteps.length,
