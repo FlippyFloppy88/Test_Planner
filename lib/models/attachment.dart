@@ -13,7 +13,7 @@ part 'attachment.g.dart';
 /// [base64Content] is kept for backward-compatibility with any existing
 /// data that was stored as base64 (web era). Prefer [filePath] going forward.
 @freezed
-class Attachment with _$Attachment {
+abstract class Attachment with _$Attachment {
   const factory Attachment({
     required String id,
     required String fileName,

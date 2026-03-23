@@ -14,17 +14,30 @@ class TestPlanDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    debugPrint('[NAV_DBG] TestPlanDetailScreen.build called planId=$planId');
     final plansAsync = ref.watch(testPlansProvider);
+    debugPrint('[NAV_DBG] testPlansProvider state: ${plansAsync.runtimeType}');
 
     return plansAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
+      loading: () {
+        debugPrint('[NAV_DBG] TestPlanDetailScreen -> loading state');
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      },
+      error: (e, st) {
+        debugPrint('[NAV_DBG] TestPlanDetailScreen -> error state: $e');
+        return Scaffold(body: Center(child: Text('Error: $e')));
+      },
       data: (plans) {
+        debugPrint('[NAV_DBG] TestPlanDetailScreen -> data state: ${plans.length} plans');
         late final TestPlan plan;
         try {
           plan = plans.firstWhere((p) => p.id == planId);
-        } catch (_) {
+          debugPrint('[NAV_DBG] Found plan "${plan.name}" with ${plan.testCases.length} test cases');
+          for (var i = 0; i < plan.testCases.length; i++) {
+            debugPrint('[NAV_DBG]   case[$i] id=${plan.testCases[i].id} name="${plan.testCases[i].name}"');
+          }
+        } catch (e) {
+          debugPrint('[NAV_DBG] Plan id=$planId NOT FOUND in ${plans.length} plans');
           return Scaffold(
             appBar: AppBar(title: const Text('Test Plan')),
             body: Center(child: Text('Plan not found')),
@@ -92,12 +105,14 @@ class TestPlanDetailScreen extends ConsumerWidget {
                         itemCount: plan.testCases.length,
                         onReorder: (oldIdx, newIdx) async {
                           if (newIdx > oldIdx) newIdx--;
+                          debugPrint('[NAV_DBG] reorderTestCases oldIdx=$oldIdx newIdx=$newIdx');
                           await ref
                               .read(testPlansProvider.notifier)
                               .reorderTestCases(plan.id, oldIdx, newIdx);
                         },
                         itemBuilder: (ctx, i) {
                           final tc = plan.testCases[i];
+                          debugPrint('[NAV_DBG] itemBuilder[$i] building _TestCaseCard id=${tc.id} name="${tc.name}"');
                           return _TestCaseCard(
                             key: ValueKey(tc.id),
                             tc: tc,
@@ -116,10 +131,16 @@ class TestPlanDetailScreen extends ConsumerWidget {
 
   Future<void> _addTestCase(
       BuildContext context, WidgetRef ref, String planId) async {
+    debugPrint('[NAV_DBG] _addTestCase called for planId=$planId');
     final name = await showInputDialog(context,
         title: 'New Test Case', label: 'Test Case Name');
-    if (name == null || name.isEmpty) return;
+    if (name == null || name.isEmpty) {
+      debugPrint('[NAV_DBG] _addTestCase cancelled (no name)');
+      return;
+    }
+    debugPrint('[NAV_DBG] _addTestCase adding "$name" to planId=$planId');
     await ref.read(testPlansProvider.notifier).addTestCase(planId, name, '');
+    debugPrint('[NAV_DBG] _addTestCase done');
   }
 
   Future<void> _startExecution(
@@ -154,10 +175,32 @@ class _TestCaseCardState extends ConsumerState<_TestCaseCard> {
   bool _expanded = false;
 
   @override
+  void initState() {
+    super.initState();
+    debugPrint('[NAV_DBG] _TestCaseCard MOUNTED id=${widget.tc.id} name="${widget.tc.name}" index=${widget.index}');
+  }
+
+  @override
+  void didUpdateWidget(_TestCaseCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tc.id != widget.tc.id || oldWidget.index != widget.index) {
+      debugPrint('[NAV_DBG] _TestCaseCard didUpdateWidget: id ${oldWidget.tc.id}->${widget.tc.id} index ${oldWidget.index}->${widget.index}');
+    }
+  }
+
+  @override
+  void dispose() {
+    debugPrint('[NAV_DBG] _TestCaseCard DISPOSED id=${widget.tc.id} name="${widget.tc.name}"');
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tc = widget.tc;
+    debugPrint('[NAV_DBG] _TestCaseCard.build id=${tc.id} name="${tc.name}" index=${widget.index}');
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
+    final incomplete = _isTestCaseIncomplete(tc);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -167,8 +210,20 @@ class _TestCaseCardState extends ConsumerState<_TestCaseCard> {
             contentPadding: const EdgeInsets.only(left: 12, right: 4),
             leading: NumberedDragHandle(index: widget.index),
             title: Text(tc.name),
-            subtitle: Text(
-              '${tc.steps.length} test${tc.steps.length != 1 ? 's' : ''} · ${tc.updatedAt.toDisplayDate()}',
+            subtitle: Row(
+              children: [
+                if (incomplete) ...[
+                  Icon(Icons.warning_amber_rounded, size: 14, color: colors.error),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Incomplete · ',
+                    style: textTheme.bodySmall?.copyWith(color: colors.error),
+                  ),
+                ],
+                Text(
+                  '${tc.steps.length} test${tc.steps.length != 1 ? 's' : ''} · ${tc.updatedAt.toDisplayDate()}',
+                ),
+              ],
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -186,8 +241,10 @@ class _TestCaseCardState extends ConsumerState<_TestCaseCard> {
                 IconButton(
                   icon: const Icon(Icons.open_in_new),
                   tooltip: 'Open test case',
-                  onPressed: () =>
-                      context.go('/test-plans/${widget.planId}/case/${tc.id}'),
+                  onPressed: () {
+                    debugPrint('[NAV_DBG] Open button pressed -> context.go(/test-plans/${widget.planId}/case/${tc.id})');
+                    context.go('/test-plans/${widget.planId}/case/${tc.id}');
+                  },
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
@@ -196,8 +253,10 @@ class _TestCaseCardState extends ConsumerState<_TestCaseCard> {
                 ),
               ],
             ),
-            onTap: () =>
-                context.go('/test-plans/${widget.planId}/case/${tc.id}'),
+            onTap: () {
+              debugPrint('[NAV_DBG] ListTile onTap -> context.go(/test-plans/${widget.planId}/case/${tc.id})');
+              context.go('/test-plans/${widget.planId}/case/${tc.id}');
+            },
           ),
 
           // ── Expanded tests list ─────────────────────────────────────
@@ -252,4 +311,13 @@ class _TestCaseCardState extends ConsumerState<_TestCaseCard> {
           .deleteTestCase(widget.planId, widget.tc.id);
     }
   }
+}
+
+bool _isTestCaseIncomplete(TestCase tc) {
+  if (tc.steps.isEmpty) return true;
+  for (final step in tc.steps) {
+    final er = step.expectedResult;
+    if (er.items.isEmpty && er.description.isEmpty) return true;
+  }
+  return false;
 }

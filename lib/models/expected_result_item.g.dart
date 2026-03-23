@@ -1,35 +1,38 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'expected_result.dart';
+part of 'expected_result_item.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-_ExpectedResult _$ExpectedResultFromJson(Map<String, dynamic> json) =>
-    _ExpectedResult(
-      description: json['description'] as String? ?? '',
+_ExpectedResultItem _$ExpectedResultItemFromJson(Map<String, dynamic> json) =>
+    _ExpectedResultItem(
+      id: json['id'] as String,
+      order: (json['order'] as num?)?.toInt() ?? 0,
+      observation: json['observation'] as String? ?? '',
       answerType:
           $enumDecodeNullable(_$AnswerTypeEnumMap, json['answerType']) ??
               AnswerType.none,
       minValue: (json['minValue'] as num?)?.toDouble(),
       maxValue: (json['maxValue'] as num?)?.toDouble(),
       unit: json['unit'] as String?,
-      items: (json['items'] as List<dynamic>?)
-              ?.map(
-                  (e) => ExpectedResultItem.fromJson(e as Map<String, dynamic>))
+      attachments: (json['attachments'] as List<dynamic>?)
+              ?.map((e) => Attachment.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
     );
 
-Map<String, dynamic> _$ExpectedResultToJson(_ExpectedResult instance) =>
+Map<String, dynamic> _$ExpectedResultItemToJson(_ExpectedResultItem instance) =>
     <String, dynamic>{
-      'description': instance.description,
+      'id': instance.id,
+      'order': instance.order,
+      'observation': instance.observation,
       'answerType': _$AnswerTypeEnumMap[instance.answerType]!,
       'minValue': instance.minValue,
       'maxValue': instance.maxValue,
       'unit': instance.unit,
-      'items': instance.items,
+      'attachments': instance.attachments,
     };
 
 const _$AnswerTypeEnumMap = {

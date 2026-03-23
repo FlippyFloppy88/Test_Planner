@@ -54,7 +54,7 @@ class ExecutionService {
     final dateStr =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     final versionPart = releaseVersion != null ? '_v$releaseVersion' : '';
-    final base = '${baseName}${versionPart}_$dateStr';
+    final base = '$baseName${versionPart}_$dateStr';
 
     // Count existing runs with same base name on same day
     final matches = existingRuns

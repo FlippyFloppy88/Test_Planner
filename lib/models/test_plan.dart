@@ -5,7 +5,7 @@ part 'test_plan.freezed.dart';
 part 'test_plan.g.dart';
 
 @freezed
-class TestPlan with _$TestPlan {
+abstract class TestPlan with _$TestPlan {
   const factory TestPlan({
     required String id,
     @Default('') String name,

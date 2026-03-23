@@ -6,8 +6,7 @@ part of 'test_step.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$TestStepImpl _$$TestStepImplFromJson(Map<String, dynamic> json) =>
-    _$TestStepImpl(
+_TestStep _$TestStepFromJson(Map<String, dynamic> json) => _TestStep(
       id: json['id'] as String,
       order: (json['order'] as num?)?.toInt() ?? 1,
       name: json['name'] as String? ?? '',
@@ -24,8 +23,7 @@ _$TestStepImpl _$$TestStepImplFromJson(Map<String, dynamic> json) =>
           const [],
     );
 
-Map<String, dynamic> _$$TestStepImplToJson(_$TestStepImpl instance) =>
-    <String, dynamic>{
+Map<String, dynamic> _$TestStepToJson(_TestStep instance) => <String, dynamic>{
       'id': instance.id,
       'order': instance.order,
       'name': instance.name,

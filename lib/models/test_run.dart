@@ -8,7 +8,7 @@ part 'test_run.g.dart';
 enum StepResultStatus { notRun, passed, failed, skipped }
 
 @freezed
-class StepResult with _$StepResult {
+abstract class StepResult with _$StepResult {
   const factory StepResult({
     required String stepId,
     required String stepName,
@@ -36,7 +36,7 @@ class StepResult with _$StepResult {
 }
 
 @freezed
-class TestRun with _$TestRun {
+abstract class TestRun with _$TestRun {
   const factory TestRun({
     required String id,
     required String name,

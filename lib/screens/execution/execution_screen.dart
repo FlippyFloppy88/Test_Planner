@@ -425,6 +425,49 @@ class _StepRowState extends State<_StepRow> {
 
   bool get _isSubStep => widget.result.stepName.contains(' > ');
 
+  void _showImagePreview(BuildContext context, Attachment att) {
+    final absPath = att.filePath.isNotEmpty &&
+            widget.storageFolderPath.isNotEmpty
+        ? p.join(widget.storageFolderPath, att.filePath)
+        : null;
+    Widget imageWidget;
+    if (absPath != null && File(absPath).existsSync()) {
+      imageWidget = InteractiveViewer(child: Image.file(File(absPath)));
+    } else {
+      imageWidget = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.broken_image, size: 48),
+          const SizedBox(height: 8),
+          Text(
+            absPath != null ? 'File not found:\n$absPath' : 'No image data',
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
+    }
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(
+              title: Text(att.fileName),
+              automaticallyImplyLeading: false,
+              actions: [
+                IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx))
+              ],
+            ),
+            Flexible(child: imageWidget),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _onCheckboxChanged(bool? checked) {
     if (checked != true) {
       widget.onUpdate(widget.result.copyWith(
@@ -435,7 +478,11 @@ class _StepRowState extends State<_StepRow> {
       return;
     }
     final er = widget.result.expectedResult;
-    if (er.answerType == AnswerType.none && widget.result.procedure.isEmpty) {
+    final needsDialog = er.answerType != AnswerType.none ||
+        er.description.isNotEmpty ||
+        er.items.isNotEmpty ||
+        widget.result.procedure.isNotEmpty;
+    if (!needsDialog) {
       widget.onUpdate(widget.result.copyWith(status: StepResultStatus.passed));
     } else {
       _showResultDialog();
@@ -444,6 +491,12 @@ class _StepRowState extends State<_StepRow> {
 
   Future<void> _showResultDialog() async {
     final er = widget.result.expectedResult;
+    // Dispatch to multi-item dialog when the step uses the new list-based
+    // expected results (created with the updated test step editor).
+    if (er.items.isNotEmpty) {
+      await _showMultiItemDialog(er);
+      return;
+    }
     bool? passFail = widget.result.actualPassFail;
     final valueCtrl =
         TextEditingController(text: widget.result.actualValue ?? '');
@@ -481,7 +534,11 @@ class _StepRowState extends State<_StepRow> {
                         color: Theme.of(ctx).colorScheme.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(er.description),
+                      child: ProcedureText(
+                        text: er.description,
+                        attachments: const [],
+                        onAttachmentTap: (att) => _showImagePreview(ctx, att),
+                      ),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -579,6 +636,247 @@ class _StepRowState extends State<_StepRow> {
         },
       ),
     );
+  }
+
+  // ── Multi-item expected results dialog ────────────────────────────────────
+
+  Future<void> _showMultiItemDialog(ExpectedResult er) async {
+    // Per-item answer state (allocated once, outside the builder).
+    final pfAnswers = <String, bool?>{};
+    final valueCtrs = <String, TextEditingController>{};
+    for (final item in er.items) {
+      if (item.answerType == AnswerType.value) {
+        valueCtrs[item.id] = TextEditingController();
+      }
+    }
+
+    try {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setLocal) {
+            // ── Computed state ────────────────────────────────────────
+            bool allAnswered = er.items.every((item) {
+              return switch (item.answerType) {
+                AnswerType.none => true,
+                AnswerType.passFail => pfAnswers[item.id] != null,
+                AnswerType.value =>
+                  double.tryParse(valueCtrs[item.id]?.text ?? '') != null,
+              };
+            });
+
+            bool anyFailed = false;
+            for (final item in er.items) {
+              if (item.answerType == AnswerType.passFail &&
+                  pfAnswers[item.id] == false) {
+                anyFailed = true;
+                break;
+              }
+              if (item.answerType == AnswerType.value) {
+                final v = double.tryParse(valueCtrs[item.id]?.text ?? '');
+                if (v != null &&
+                    ((item.minValue != null && v < item.minValue!) ||
+                        (item.maxValue != null && v > item.maxValue!))) {
+                  anyFailed = true;
+                  break;
+                }
+              }
+            }
+
+            // Summary string stored in actualValue for display in results.
+            String buildSummary() {
+              final parts = <String>[];
+              for (final item in er.items) {
+                switch (item.answerType) {
+                  case AnswerType.none:
+                    break;
+                  case AnswerType.passFail:
+                    parts.add(pfAnswers[item.id] == true ? 'Pass' : 'Fail');
+                  case AnswerType.value:
+                    final t = valueCtrs[item.id]?.text ?? '';
+                    if (t.isNotEmpty) parts.add(t);
+                }
+              }
+              return parts.join(', ');
+            }
+
+            return AlertDialog(
+              title: Text(widget.result.stepName.split(' > ').last),
+              content: SizedBox(
+                width: 500,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.result.procedure.isNotEmpty) ...[
+                        _ProcedureView(
+                          items: widget.result.procedure,
+                          storageFolderPath: widget.storageFolderPath,
+                        ),
+                        const Divider(height: 24),
+                      ],
+                      ...er.items.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final item = entry.value;
+                        final vCtrl = valueCtrs[item.id];
+                        final pf = pfAnswers[item.id];
+                        final enteredValue =
+                            double.tryParse(vCtrl?.text ?? '');
+                        final inRange = enteredValue != null &&
+                            (item.minValue == null ||
+                                enteredValue >= item.minValue!) &&
+                            (item.maxValue == null ||
+                                enteredValue <= item.maxValue!);
+
+                        return Padding(
+                          padding: EdgeInsets.only(top: i > 0 ? 16 : 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (item.observation.isNotEmpty)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(ctx)
+                                        .colorScheme
+                                        .surfaceContainerLow,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ProcedureText(
+                                    text: item.observation,
+                                    attachments: item.attachments,
+                                    onAttachmentTap: (att) =>
+                                        _showImagePreview(ctx, att),
+                                  ),
+                                ),
+                              if (item.answerType == AnswerType.passFail) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    ChoiceChip(
+                                      label: const Text('Pass'),
+                                      selected: pf == true,
+                                      selectedColor: Colors.green.shade100,
+                                      avatar:
+                                          const Icon(Icons.check, size: 16),
+                                      onSelected: (_) => setLocal(
+                                          () => pfAnswers[item.id] = true),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    ChoiceChip(
+                                      label: const Text('Fail'),
+                                      selected: pf == false,
+                                      selectedColor: Colors.red.shade100,
+                                      avatar:
+                                          const Icon(Icons.close, size: 16),
+                                      onSelected: (_) => setLocal(
+                                          () => pfAnswers[item.id] = false),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              if (item.answerType == AnswerType.value) ...[
+                                if (item.minValue != null ||
+                                    item.maxValue != null) ...[
+                                  const SizedBox(height: 8),
+                                  Chip(
+                                    label: Text(
+                                      'Expected: '
+                                      '${item.minValue ?? '—'} – '
+                                      '${item.maxValue ?? '—'}'
+                                      '${item.unit != null ? ' ${item.unit}' : ''}',
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: vCtrl,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  decoration: InputDecoration(
+                                    labelText: 'Actual Value'
+                                        '${item.unit != null ? ' (${item.unit})' : ''}',
+                                    isDense: true,
+                                    border: const OutlineInputBorder(),
+                                    suffixIcon: enteredValue != null
+                                        ? Icon(
+                                            inRange
+                                                ? Icons.check_circle
+                                                : Icons.error,
+                                            color: inRange
+                                                ? Colors.green
+                                                : Colors.red,
+                                          )
+                                        : null,
+                                  ),
+                                  onChanged: (_) => setLocal(() {}),
+                                ),
+                                if (enteredValue != null && !inRange)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      '⚠ Value out of range',
+                                      style: TextStyle(
+                                          color: Theme.of(ctx)
+                                              .colorScheme
+                                              .error),
+                                    ),
+                                  ),
+                              ],
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                if (allAnswered && anyFailed)
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(ctx).colorScheme.error),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _recordFailure(value: buildSummary());
+                    },
+                    child: const Text('Record Failure'),
+                  )
+                else
+                  FilledButton(
+                    onPressed: allAnswered && !anyFailed
+                        ? () {
+                            final summary = buildSummary();
+                            Navigator.pop(ctx);
+                            widget.onUpdate(widget.result.copyWith(
+                              status: StepResultStatus.passed,
+                              actualPassFail: true,
+                              actualValue:
+                                  summary.isNotEmpty ? summary : null,
+                            ));
+                          }
+                        : null,
+                    child: const Text('Confirm'),
+                  ),
+              ],
+            );
+          },
+        ),
+      );
+    } finally {
+      for (final ctrl in valueCtrs.values) {
+        ctrl.dispose();
+      }
+    }
   }
 
   bool _canConfirm(ExpectedResult er, bool? passFail, String valueText) {
@@ -777,7 +1075,7 @@ class _StepRowState extends State<_StepRow> {
 
             // Result summary after completion
             if (status != StepResultStatus.notRun &&
-                er.answerType != AnswerType.none)
+                (er.answerType != AnswerType.none || er.items.isNotEmpty))
               Padding(
                 padding: const EdgeInsets.only(left: 48, right: 12, bottom: 8),
                 child: _ResultSummary(result: result),
@@ -811,19 +1109,27 @@ class _ResultSummary extends StatelessWidget {
     final failed = result.status == StepResultStatus.failed;
     final color =
         failed ? Theme.of(context).colorScheme.error : Colors.green.shade700;
-    final text = failed
-        ? switch (er.answerType) {
-            AnswerType.passFail => 'Failed',
-            AnswerType.value =>
-              'Value: ${result.actualValue ?? '?'} — out of range',
-            AnswerType.none => 'Failed',
-          }
-        : switch (er.answerType) {
-            AnswerType.passFail => 'Passed',
-            AnswerType.value =>
-              'Value: ${result.actualValue ?? '?'}${er.unit != null ? ' ${er.unit}' : ''}',
-            AnswerType.none => 'Completed',
-          };
+    final String text;
+    if (er.items.isNotEmpty) {
+      final summary = result.actualValue;
+      text = failed
+          ? 'Failed${summary != null ? ': $summary' : ''}'
+          : 'Passed${summary != null ? ': $summary' : ''}';
+    } else {
+      text = failed
+          ? switch (er.answerType) {
+              AnswerType.passFail => 'Failed',
+              AnswerType.value =>
+                'Value: ${result.actualValue ?? '?'} — out of range',
+              AnswerType.none => 'Failed',
+            }
+          : switch (er.answerType) {
+              AnswerType.passFail => 'Passed',
+              AnswerType.value =>
+                'Value: ${result.actualValue ?? '?'}${er.unit != null ? ' ${er.unit}' : ''}',
+              AnswerType.none => 'Completed',
+            };
+    }
 
     return Text(text,
         style: Theme.of(context)

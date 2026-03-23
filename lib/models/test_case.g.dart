@@ -6,8 +6,7 @@ part of 'test_case.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$TestCaseImpl _$$TestCaseImplFromJson(Map<String, dynamic> json) =>
-    _$TestCaseImpl(
+_TestCase _$TestCaseFromJson(Map<String, dynamic> json) => _TestCase(
       id: json['id'] as String,
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
@@ -27,8 +26,7 @@ _$TestCaseImpl _$$TestCaseImplFromJson(Map<String, dynamic> json) =>
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
 
-Map<String, dynamic> _$$TestCaseImplToJson(_$TestCaseImpl instance) =>
-    <String, dynamic>{
+Map<String, dynamic> _$TestCaseToJson(_TestCase instance) => <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
       'description': instance.description,

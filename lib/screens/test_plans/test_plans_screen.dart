@@ -149,6 +149,11 @@ class _PlanCardState extends ConsumerState<_PlanCard> {
                               context.go('/test-plans/${plan.id}'),
                         ),
                         IconButton(
+                          icon: const Icon(Icons.copy_outlined),
+                          tooltip: 'Duplicate plan',
+                          onPressed: _onDuplicate,
+                        ),
+                        IconButton(
                           icon: const Icon(Icons.delete_outline),
                           tooltip: 'Delete plan',
                           onPressed: _onDelete,
@@ -232,6 +237,21 @@ class _PlanCardState extends ConsumerState<_PlanCard> {
       ),
       onTap: () => context.go('/test-plans/$planId/case/${tc.id}'),
     );
+  }
+
+  Future<void> _onDuplicate() async {
+    final name = await showInputDialog(
+      context,
+      title: 'Duplicate Test Plan',
+      label: 'New Plan Name',
+      initialValue: '${widget.plan.name} (copy)',
+    );
+    if (name == null || name.trim().isEmpty) return;
+    if (mounted) {
+      await ref
+          .read(testPlansProvider.notifier)
+          .duplicateTestPlan(widget.plan.id, name.trim());
+    }
   }
 
   Future<void> _onDelete() async {

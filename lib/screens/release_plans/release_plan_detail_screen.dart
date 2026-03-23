@@ -215,92 +215,93 @@ class _ReleasePlanItemCardState
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
 
-    return widget.item.map(
-      testPlanRef: (ref_) {
-        // Look up the live test plan to show its test cases
-        final livePlan = widget.testPlans
-            .where((tp) => tp.id == ref_.testPlanId)
-            .firstOrNull;
-        final testCases = livePlan?.testCases ?? [];
+    final item = widget.item;
+    if (item is ReleasePlanItemTestPlanRef) {
+      // Look up the live test plan to show its test cases
+      final livePlan = widget.testPlans
+          .where((tp) => tp.id == item.testPlanId)
+          .firstOrNull;
+      final testCases = livePlan?.testCases ?? [];
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: Column(
-            children: [
-              ListTile(
-                contentPadding: const EdgeInsets.only(left: 12, right: 4),
-                leading: NumberedDragHandle(index: widget.index),
-                title: Text(ref_.testPlanName),
-                subtitle: Text(
-                    '${testCases.length} test case${testCases.length != 1 ? 's' : ''}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: AnimatedRotation(
-                        turns: _expanded ? 0.0 : 0.5,
-                        duration: const Duration(milliseconds: 200),
-                        child: const Icon(Icons.expand_more),
-                      ),
-                      tooltip: _expanded ? 'Collapse' : 'Show test cases',
-                      onPressed: () =>
-                          setState(() => _expanded = !_expanded),
+      return Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: Column(
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.only(left: 12, right: 4),
+              leading: NumberedDragHandle(index: widget.index),
+              title: Text(item.testPlanName),
+              subtitle: Text(
+                  '${testCases.length} test case${testCases.length != 1 ? 's' : ''}'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: AnimatedRotation(
+                      turns: _expanded ? 0.0 : 0.5,
+                      duration: const Duration(milliseconds: 200),
+                      child: const Icon(Icons.expand_more),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline),
-                      tooltip: 'Remove from release plan',
-                      onPressed: () => ref
-                          .read(releasePlansProvider.notifier)
-                          .removeItem(widget.releasePlanId, ref_.id),
-                    ),
-                  ],
-                ),
+                    tooltip: _expanded ? 'Collapse' : 'Show test cases',
+                    onPressed: () =>
+                        setState(() => _expanded = !_expanded),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    tooltip: 'Remove from release plan',
+                    onPressed: () => ref
+                        .read(releasePlansProvider.notifier)
+                        .removeItem(widget.releasePlanId, item.id),
+                  ),
+                ],
               ),
-              if (_expanded) ...[
-                const Divider(height: 1),
-                if (testCases.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 10, horizontal: 16),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'No test cases in this plan.',
+            ),
+            if (_expanded) ...[
+              const Divider(height: 1),
+              if (testCases.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 10, horizontal: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'No test cases in this plan.',
+                      style: textTheme.bodySmall
+                          ?.copyWith(color: colors.onSurfaceVariant),
+                    ),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: testCases.length,
+                  itemBuilder: (_, j) {
+                    final tc = testCases[j];
+                    return ListTile(
+                      dense: true,
+                      contentPadding:
+                          const EdgeInsets.only(left: 56, right: 16),
+                      leading: Text(
+                        '${j + 1}.',
                         style: textTheme.bodySmall
                             ?.copyWith(color: colors.onSurfaceVariant),
                       ),
-                    ),
-                  )
-                else
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: testCases.length,
-                    itemBuilder: (_, j) {
-                      final tc = testCases[j];
-                      return ListTile(
-                        dense: true,
-                        contentPadding:
-                            const EdgeInsets.only(left: 56, right: 16),
-                        leading: Text(
-                          '${j + 1}.',
-                          style: textTheme.bodySmall
-                              ?.copyWith(color: colors.onSurfaceVariant),
-                        ),
-                        title: Text(tc.name, style: textTheme.bodyMedium),
-                        subtitle: Text(
-                          '${tc.steps.length} test${tc.steps.length != 1 ? 's' : ''}',
-                          style: textTheme.bodySmall,
-                        ),
-                      );
-                    },
-                  ),
-              ],
+                      title: Text(tc.name, style: textTheme.bodyMedium),
+                      subtitle: Text(
+                        '${tc.steps.length} test${tc.steps.length != 1 ? 's' : ''}',
+                        style: textTheme.bodySmall,
+                      ),
+                    );
+                  },
+                ),
             ],
-          ),
-        );
-      },
-      oneOff: (o) => Card(
+          ],
+        ),
+      );
+    } else {
+      final o = item as ReleasePlanItemOneOff;
+      return Card(
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
           contentPadding: const EdgeInsets.only(left: 12, right: 4),
@@ -315,7 +316,7 @@ class _ReleasePlanItemCardState
                 .removeItem(widget.releasePlanId, o.id),
           ),
         ),
-      ),
-    );
+      );
+    }
   }
 }

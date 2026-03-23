@@ -48,9 +48,16 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('[NAV_DBG] TestCaseEditorScreen.initState planId=${widget.planId} caseId=${widget.caseId}');
     _nameCtrl = TextEditingController();
     _descCtrl = TextEditingController();
     _jiraInputCtrl = TextEditingController();
+    // Eagerly load from the provider if data is already available.
+    // This avoids scheduling a postFrameCallback from inside build(), which
+    // races with go_router's async _processParsedRouteInformation and causes
+    // a "setState during build" crash on the Router widget.
+    final plans = ref.read(testPlansProvider).valueOrNull;
+    if (plans != null) _loadFromPlan(plans);
   }
 
   /// Sets dirty and starts a 10-second auto-save timer if one isn't already
@@ -76,17 +83,25 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
 
   void _loadFromPlan(List<TestPlan> plans) {
     if (_steps != null) return;
+    debugPrint('[NAV_DBG] _loadFromPlan called: ${plans.length} plans, looking for planId=${widget.planId} caseId=${widget.caseId}');
+    for (final p in plans) {
+      debugPrint('[NAV_DBG]   plan id=${p.id} name="${p.name}" cases=${p.testCases.length}');
+      for (final c in p.testCases) {
+        debugPrint('[NAV_DBG]     case id=${c.id} name="${c.name}"');
+      }
+    }
     final plan = plans.firstWhere((p) => p.id == widget.planId,
-        orElse: () => throw StateError('Plan not found'));
+        orElse: () => throw StateError('Plan not found: ${widget.planId}'));
     final tc = plan.testCases.firstWhere((c) => c.id == widget.caseId,
-        orElse: () => throw StateError('Case not found'));
+        orElse: () => throw StateError('Case not found: ${widget.caseId} in plan ${plan.id}'));
+    debugPrint('[NAV_DBG] _loadFromPlan found plan "${plan.name}" case "${tc.name}" steps=${tc.steps.length}');
     _nameCtrl.text = tc.name;
     _descCtrl.text = tc.description;
     _steps = List<TestStep>.from(tc.steps);
     _preconditions = List<ProcedureItem>.from(tc.preconditions);
     _jiraLinks = List<String>.from(tc.jiraLinks);
-    // Determine plan-level image folder slug
     _planImageFolder = 'test_plans/${_safeName(plan.name.isEmpty ? plan.id : plan.name)}';
+    debugPrint('[NAV_DBG] _loadFromPlan complete _planImageFolder=$_planImageFolder');
   }
 
   /// Collect all storyLinks from steps and sub-steps recursively.
@@ -188,23 +203,57 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
     _markDirty();
   }
 
+  /// Returns true if the test case is incomplete:
+  ///  - no test steps at all, OR
+  ///  - any step has no expected result (items list empty AND legacy description empty)
+  bool _isIncomplete() {
+    if (_steps == null || _steps!.isEmpty) return true;
+    for (final step in _steps!) {
+      final er = step.expectedResult;
+      if (er.items.isEmpty && er.description.isEmpty) return true;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    debugPrint('[NAV_DBG] TestCaseEditorScreen.build planId=${widget.planId} caseId=${widget.caseId} _steps=${_steps?.length}');
     final plansAsync = ref.watch(testPlansProvider);
+    debugPrint('[NAV_DBG] TestCaseEditorScreen plansAsync=${plansAsync.runtimeType}');
 
     return plansAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => const Scaffold(body: Center(child: Text('Error: \$e'))),
+      loading: () {
+        debugPrint('[NAV_DBG] TestCaseEditorScreen -> loading');
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      },
+      error: (e, st) {
+        debugPrint('[NAV_DBG] TestCaseEditorScreen -> error: $e');
+        return Scaffold(body: Center(child: Text('Error: \$e')));
+      },
       data: (plans) {
-        _loadFromPlan(plans);
+        debugPrint('[NAV_DBG] TestCaseEditorScreen -> data: ${plans.length} plans, _steps=$_steps');
+        if (_steps == null) {
+          debugPrint('[NAV_DBG] TestCaseEditorScreen _steps==null, scheduling postFrameCallback');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            debugPrint('[NAV_DBG] postFrameCallback fired: mounted=$mounted _steps=$_steps');
+            if (mounted && _steps == null) {
+              debugPrint('[NAV_DBG] calling setState(_loadFromPlan) from postFrameCallback');
+              setState(() => _loadFromPlan(plans));
+              debugPrint('[NAV_DBG] setState(_loadFromPlan) returned');
+            }
+          });
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
+        }
 
         final title =
             _nameCtrl.text.isEmpty ? 'Edit Test Case' : _nameCtrl.text;
 
         return PopScope(
-          canPop: false,
+          canPop: !_dirty && !_isIncomplete(),
           onPopInvokedWithResult: (didPop, _) async {
+            if (didPop) return;
+            // Dirty check first.
             if (_dirty) {
               final save = await showDialog<bool>(
                 context: context,
@@ -224,8 +273,33 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                 ),
               );
               if (save == true) await _save();
+              if (!context.mounted) return;
             }
-            if (context.mounted) context.go('/test-plans/${widget.planId}');
+            // Incomplete check.
+            if (_isIncomplete()) {
+              final proceed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Incomplete Test Case'),
+                  content: const Text(
+                    'This test case has no tests or is missing expected results.\n\n'
+                    'Do you still want to leave without completing it?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Keep Editing'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Leave Anyway'),
+                    ),
+                  ],
+                ),
+              );
+              if (proceed != true || !context.mounted) return;
+            }
+            if (context.mounted) context.pop();
           },
           child: Scaffold(
             body: Column(
@@ -237,8 +311,7 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back),
-                        onPressed: () =>
-                            context.go('/test-plans/${widget.planId}'),
+                        onPressed: () => context.pop(),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -289,7 +362,8 @@ class _TestCaseEditorScreenState extends ConsumerState<TestCaseEditorScreen> {
                             labelText: 'Description (optional)',
                             border: OutlineInputBorder(),
                           ),
-                          maxLines: 4,
+                          maxLines: null,
+                          minLines: 1,
                           onChanged: (_) => _markDirty(),
                         ),
                         const SizedBox(height: 12),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
+import 'formatting_toolbar.dart';
 import 'procedure_text.dart';
 
 const _uuid = Uuid();
@@ -712,7 +713,21 @@ class _ProcedureItemRow extends StatefulWidget {
 }
 
 class _ProcedureItemRowState extends State<_ProcedureItemRow> {
-  void _onFocusChanged() => setState(() {});
+  void _onFocusChanged() {
+    // When focus is gained, move the caret to the end so the user can continue
+    // typing immediately. This must NOT be done inside build() because
+    // modifying a TextEditingController during build fires notifyListeners()
+    // on an already-listening EditableTextState, which can race with
+    // GoRouter's async route-processing and cause a "setState during build"
+    // exception on the Router widget.
+    if (widget.focusNode.hasFocus) {
+      try {
+        final end = widget.controller.text.length;
+        widget.controller.selection = TextSelection.collapsed(offset: end);
+      } catch (_) {}
+    }
+    setState(() {});
+  }
 
   @override
   void initState() {
@@ -745,13 +760,6 @@ class _ProcedureItemRowState extends State<_ProcedureItemRow> {
       ...widget.item.attachments,
       ...?widget.stagedAttachments,
     ];
-    if (hasFocus) {
-      // Place the caret at the end so users can continue typing after a tap.
-      try {
-        final end = widget.controller.text.length;
-        widget.controller.selection = TextSelection.collapsed(offset: end);
-      } catch (_) {}
-    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -772,11 +780,20 @@ class _ProcedureItemRowState extends State<_ProcedureItemRow> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Edit mode: show TextField and Save / Cancel actions.
+                    // Edit mode: show formatting toolbar, TextField and Save / Cancel actions.
                     if (editing)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          FormattingToolbar(
+                            controller: widget.controller,
+                            focusNode: widget.focusNode,
+                            attachments: [
+                              ...widget.item.attachments,
+                              ...(widget.stagedAttachments ?? []),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
                           TextField(
                             controller: widget.controller,
                             focusNode: widget.focusNode,
@@ -791,6 +808,7 @@ class _ProcedureItemRowState extends State<_ProcedureItemRow> {
                               ),
                             ),
                             maxLines: null,
+                            minLines: 1,
                             onChanged: widget.onTextChanged,
                           ),
                           const SizedBox(height: 6),
@@ -824,6 +842,12 @@ class _ProcedureItemRowState extends State<_ProcedureItemRow> {
                       ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                color: colors.primary,
+                onPressed: editing ? null : widget.onEnterEdit,
+                tooltip: 'Edit',
               ),
               IconButton(
                 icon: const Icon(Icons.remove_circle_outline, size: 20),

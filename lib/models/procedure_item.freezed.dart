@@ -1,3 +1,4 @@
+// dart format width=80
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
@@ -9,100 +10,66 @@ part of 'procedure_item.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-ProcedureItem _$ProcedureItemFromJson(Map<String, dynamic> json) {
-  return _ProcedureItem.fromJson(json);
-}
 
 /// @nodoc
 mixin _$ProcedureItem {
-  String get id => throw _privateConstructorUsedError;
-  int get order => throw _privateConstructorUsedError;
-  String get text => throw _privateConstructorUsedError;
-  List<Attachment> get attachments => throw _privateConstructorUsedError;
-
-  /// Serializes this ProcedureItem to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get id;
+  int get order;
+  String get text;
+  List<Attachment> get attachments;
 
   /// Create a copy of ProcedureItem
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $ProcedureItemCopyWith<ProcedureItem> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $ProcedureItemCopyWith<$Res> {
-  factory $ProcedureItemCopyWith(
-          ProcedureItem value, $Res Function(ProcedureItem) then) =
-      _$ProcedureItemCopyWithImpl<$Res, ProcedureItem>;
-  @useResult
-  $Res call({String id, int order, String text, List<Attachment> attachments});
-}
-
-/// @nodoc
-class _$ProcedureItemCopyWithImpl<$Res, $Val extends ProcedureItem>
-    implements $ProcedureItemCopyWith<$Res> {
-  _$ProcedureItemCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of ProcedureItem
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $ProcedureItemCopyWith<ProcedureItem> get copyWith =>
+      _$ProcedureItemCopyWithImpl<ProcedureItem>(
+          this as ProcedureItem, _$identity);
+
+  /// Serializes this ProcedureItem to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? id = null,
-    Object? order = null,
-    Object? text = null,
-    Object? attachments = null,
-  }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      order: null == order
-          ? _value.order
-          : order // ignore: cast_nullable_to_non_nullable
-              as int,
-      text: null == text
-          ? _value.text
-          : text // ignore: cast_nullable_to_non_nullable
-              as String,
-      attachments: null == attachments
-          ? _value.attachments
-          : attachments // ignore: cast_nullable_to_non_nullable
-              as List<Attachment>,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is ProcedureItem &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.order, order) || other.order == order) &&
+            (identical(other.text, text) || other.text == text) &&
+            const DeepCollectionEquality()
+                .equals(other.attachments, attachments));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, order, text,
+      const DeepCollectionEquality().hash(attachments));
+
+  @override
+  String toString() {
+    return 'ProcedureItem(id: $id, order: $order, text: $text, attachments: $attachments)';
   }
 }
 
 /// @nodoc
-abstract class _$$ProcedureItemImplCopyWith<$Res>
-    implements $ProcedureItemCopyWith<$Res> {
-  factory _$$ProcedureItemImplCopyWith(
-          _$ProcedureItemImpl value, $Res Function(_$ProcedureItemImpl) then) =
-      __$$ProcedureItemImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $ProcedureItemCopyWith<$Res> {
+  factory $ProcedureItemCopyWith(
+          ProcedureItem value, $Res Function(ProcedureItem) _then) =
+      _$ProcedureItemCopyWithImpl;
   @useResult
   $Res call({String id, int order, String text, List<Attachment> attachments});
 }
 
 /// @nodoc
-class __$$ProcedureItemImplCopyWithImpl<$Res>
-    extends _$ProcedureItemCopyWithImpl<$Res, _$ProcedureItemImpl>
-    implements _$$ProcedureItemImplCopyWith<$Res> {
-  __$$ProcedureItemImplCopyWithImpl(
-      _$ProcedureItemImpl _value, $Res Function(_$ProcedureItemImpl) _then)
-      : super(_value, _then);
+class _$ProcedureItemCopyWithImpl<$Res>
+    implements $ProcedureItemCopyWith<$Res> {
+  _$ProcedureItemCopyWithImpl(this._self, this._then);
+
+  final ProcedureItem _self;
+  final $Res Function(ProcedureItem) _then;
 
   /// Create a copy of ProcedureItem
   /// with the given fields replaced by the non-null parameter values.
@@ -114,21 +81,21 @@ class __$$ProcedureItemImplCopyWithImpl<$Res>
     Object? text = null,
     Object? attachments = null,
   }) {
-    return _then(_$ProcedureItemImpl(
+    return _then(_self.copyWith(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       order: null == order
-          ? _value.order
+          ? _self.order
           : order // ignore: cast_nullable_to_non_nullable
               as int,
       text: null == text
-          ? _value.text
+          ? _self.text
           : text // ignore: cast_nullable_to_non_nullable
               as String,
       attachments: null == attachments
-          ? _value._attachments
+          ? _self.attachments
           : attachments // ignore: cast_nullable_to_non_nullable
               as List<Attachment>,
     ));
@@ -137,16 +104,15 @@ class __$$ProcedureItemImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$ProcedureItemImpl implements _ProcedureItem {
-  const _$ProcedureItemImpl(
+class _ProcedureItem implements ProcedureItem {
+  const _ProcedureItem(
       {required this.id,
       this.order = 0,
       this.text = '',
       final List<Attachment> attachments = const []})
       : _attachments = attachments;
-
-  factory _$ProcedureItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$ProcedureItemImplFromJson(json);
+  factory _ProcedureItem.fromJson(Map<String, dynamic> json) =>
+      _$ProcedureItemFromJson(json);
 
   @override
   final String id;
@@ -165,16 +131,26 @@ class _$ProcedureItemImpl implements _ProcedureItem {
     return EqualUnmodifiableListView(_attachments);
   }
 
+  /// Create a copy of ProcedureItem
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'ProcedureItem(id: $id, order: $order, text: $text, attachments: $attachments)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$ProcedureItemCopyWith<_ProcedureItem> get copyWith =>
+      __$ProcedureItemCopyWithImpl<_ProcedureItem>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$ProcedureItemToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$ProcedureItemImpl &&
+            other is _ProcedureItem &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.order, order) || other.order == order) &&
             (identical(other.text, text) || other.text == text) &&
@@ -187,45 +163,60 @@ class _$ProcedureItemImpl implements _ProcedureItem {
   int get hashCode => Object.hash(runtimeType, id, order, text,
       const DeepCollectionEquality().hash(_attachments));
 
-  /// Create a copy of ProcedureItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$ProcedureItemImplCopyWith<_$ProcedureItemImpl> get copyWith =>
-      __$$ProcedureItemImplCopyWithImpl<_$ProcedureItemImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$ProcedureItemImplToJson(
-      this,
-    );
+  String toString() {
+    return 'ProcedureItem(id: $id, order: $order, text: $text, attachments: $attachments)';
   }
 }
 
-abstract class _ProcedureItem implements ProcedureItem {
-  const factory _ProcedureItem(
-      {required final String id,
-      final int order,
-      final String text,
-      final List<Attachment> attachments}) = _$ProcedureItemImpl;
+/// @nodoc
+abstract mixin class _$ProcedureItemCopyWith<$Res>
+    implements $ProcedureItemCopyWith<$Res> {
+  factory _$ProcedureItemCopyWith(
+          _ProcedureItem value, $Res Function(_ProcedureItem) _then) =
+      __$ProcedureItemCopyWithImpl;
+  @override
+  @useResult
+  $Res call({String id, int order, String text, List<Attachment> attachments});
+}
 
-  factory _ProcedureItem.fromJson(Map<String, dynamic> json) =
-      _$ProcedureItemImpl.fromJson;
+/// @nodoc
+class __$ProcedureItemCopyWithImpl<$Res>
+    implements _$ProcedureItemCopyWith<$Res> {
+  __$ProcedureItemCopyWithImpl(this._self, this._then);
 
-  @override
-  String get id;
-  @override
-  int get order;
-  @override
-  String get text;
-  @override
-  List<Attachment> get attachments;
+  final _ProcedureItem _self;
+  final $Res Function(_ProcedureItem) _then;
 
   /// Create a copy of ProcedureItem
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$ProcedureItemImplCopyWith<_$ProcedureItemImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? order = null,
+    Object? text = null,
+    Object? attachments = null,
+  }) {
+    return _then(_ProcedureItem(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      order: null == order
+          ? _self.order
+          : order // ignore: cast_nullable_to_non_nullable
+              as int,
+      text: null == text
+          ? _self.text
+          : text // ignore: cast_nullable_to_non_nullable
+              as String,
+      attachments: null == attachments
+          ? _self._attachments
+          : attachments // ignore: cast_nullable_to_non_nullable
+              as List<Attachment>,
+    ));
+  }
 }
+
+// dart format on

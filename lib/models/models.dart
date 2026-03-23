@@ -6,4 +6,5 @@ export 'test_plan.dart';
 export 'release_plan.dart';
 export 'test_run.dart';
 export 'attachment.dart';
+export 'expected_result_item.dart';
 export 'expected_result.dart';

@@ -7,7 +7,7 @@ part 'release_plan.g.dart';
 /// A release plan item is either a reference to a full test plan
 /// (by id) or a one-off test case.
 @freezed
-class ReleasePlanItem with _$ReleasePlanItem {
+abstract class ReleasePlanItem with _$ReleasePlanItem {
   /// Reference to an existing TestPlan (all its cases included)
   const factory ReleasePlanItem.testPlanRef({
     required String id,
@@ -28,7 +28,7 @@ class ReleasePlanItem with _$ReleasePlanItem {
 }
 
 @freezed
-class ReleasePlan with _$ReleasePlan {
+abstract class ReleasePlan with _$ReleasePlan {
   const factory ReleasePlan({
     required String id,
     @Default('') String productName,

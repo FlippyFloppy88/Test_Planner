@@ -1,3 +1,4 @@
+// dart format width=80
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
@@ -9,106 +10,59 @@ part of 'test_plan.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-TestPlan _$TestPlanFromJson(Map<String, dynamic> json) {
-  return _TestPlan.fromJson(json);
-}
 
 /// @nodoc
 mixin _$TestPlan {
-  String get id => throw _privateConstructorUsedError;
-  String get name => throw _privateConstructorUsedError;
-  String get description => throw _privateConstructorUsedError;
-  List<TestCase> get testCases => throw _privateConstructorUsedError;
-  DateTime get createdAt => throw _privateConstructorUsedError;
-  DateTime get updatedAt => throw _privateConstructorUsedError;
-
-  /// Serializes this TestPlan to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get id;
+  String get name;
+  String get description;
+  List<TestCase> get testCases;
+  DateTime get createdAt;
+  DateTime get updatedAt;
 
   /// Create a copy of TestPlan
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $TestPlanCopyWith<TestPlan> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $TestPlanCopyWith<$Res> {
-  factory $TestPlanCopyWith(TestPlan value, $Res Function(TestPlan) then) =
-      _$TestPlanCopyWithImpl<$Res, TestPlan>;
-  @useResult
-  $Res call(
-      {String id,
-      String name,
-      String description,
-      List<TestCase> testCases,
-      DateTime createdAt,
-      DateTime updatedAt});
-}
-
-/// @nodoc
-class _$TestPlanCopyWithImpl<$Res, $Val extends TestPlan>
-    implements $TestPlanCopyWith<$Res> {
-  _$TestPlanCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of TestPlan
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $TestPlanCopyWith<TestPlan> get copyWith =>
+      _$TestPlanCopyWithImpl<TestPlan>(this as TestPlan, _$identity);
+
+  /// Serializes this TestPlan to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? id = null,
-    Object? name = null,
-    Object? description = null,
-    Object? testCases = null,
-    Object? createdAt = null,
-    Object? updatedAt = null,
-  }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      description: null == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String,
-      testCases: null == testCases
-          ? _value.testCases
-          : testCases // ignore: cast_nullable_to_non_nullable
-              as List<TestCase>,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      updatedAt: null == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is TestPlan &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            const DeepCollectionEquality().equals(other.testCases, testCases) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, name, description,
+      const DeepCollectionEquality().hash(testCases), createdAt, updatedAt);
+
+  @override
+  String toString() {
+    return 'TestPlan(id: $id, name: $name, description: $description, testCases: $testCases, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
 /// @nodoc
-abstract class _$$TestPlanImplCopyWith<$Res>
-    implements $TestPlanCopyWith<$Res> {
-  factory _$$TestPlanImplCopyWith(
-          _$TestPlanImpl value, $Res Function(_$TestPlanImpl) then) =
-      __$$TestPlanImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $TestPlanCopyWith<$Res> {
+  factory $TestPlanCopyWith(TestPlan value, $Res Function(TestPlan) _then) =
+      _$TestPlanCopyWithImpl;
   @useResult
   $Res call(
       {String id,
@@ -120,12 +74,11 @@ abstract class _$$TestPlanImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TestPlanImplCopyWithImpl<$Res>
-    extends _$TestPlanCopyWithImpl<$Res, _$TestPlanImpl>
-    implements _$$TestPlanImplCopyWith<$Res> {
-  __$$TestPlanImplCopyWithImpl(
-      _$TestPlanImpl _value, $Res Function(_$TestPlanImpl) _then)
-      : super(_value, _then);
+class _$TestPlanCopyWithImpl<$Res> implements $TestPlanCopyWith<$Res> {
+  _$TestPlanCopyWithImpl(this._self, this._then);
+
+  final TestPlan _self;
+  final $Res Function(TestPlan) _then;
 
   /// Create a copy of TestPlan
   /// with the given fields replaced by the non-null parameter values.
@@ -139,29 +92,29 @@ class __$$TestPlanImplCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
-    return _then(_$TestPlanImpl(
+    return _then(_self.copyWith(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       name: null == name
-          ? _value.name
+          ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
       description: null == description
-          ? _value.description
+          ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
       testCases: null == testCases
-          ? _value._testCases
+          ? _self.testCases
           : testCases // ignore: cast_nullable_to_non_nullable
               as List<TestCase>,
       createdAt: null == createdAt
-          ? _value.createdAt
+          ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       updatedAt: null == updatedAt
-          ? _value.updatedAt
+          ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
     ));
@@ -170,8 +123,8 @@ class __$$TestPlanImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$TestPlanImpl implements _TestPlan {
-  const _$TestPlanImpl(
+class _TestPlan implements TestPlan {
+  const _TestPlan(
       {required this.id,
       this.name = '',
       this.description = '',
@@ -179,9 +132,8 @@ class _$TestPlanImpl implements _TestPlan {
       required this.createdAt,
       required this.updatedAt})
       : _testCases = testCases;
-
-  factory _$TestPlanImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TestPlanImplFromJson(json);
+  factory _TestPlan.fromJson(Map<String, dynamic> json) =>
+      _$TestPlanFromJson(json);
 
   @override
   final String id;
@@ -205,16 +157,26 @@ class _$TestPlanImpl implements _TestPlan {
   @override
   final DateTime updatedAt;
 
+  /// Create a copy of TestPlan
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TestPlan(id: $id, name: $name, description: $description, testCases: $testCases, createdAt: $createdAt, updatedAt: $updatedAt)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$TestPlanCopyWith<_TestPlan> get copyWith =>
+      __$TestPlanCopyWithImpl<_TestPlan>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TestPlanToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TestPlanImpl &&
+            other is _TestPlan &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.description, description) ||
@@ -232,51 +194,74 @@ class _$TestPlanImpl implements _TestPlan {
   int get hashCode => Object.hash(runtimeType, id, name, description,
       const DeepCollectionEquality().hash(_testCases), createdAt, updatedAt);
 
-  /// Create a copy of TestPlan
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TestPlanImplCopyWith<_$TestPlanImpl> get copyWith =>
-      __$$TestPlanImplCopyWithImpl<_$TestPlanImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TestPlanImplToJson(
-      this,
-    );
+  String toString() {
+    return 'TestPlan(id: $id, name: $name, description: $description, testCases: $testCases, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
-abstract class _TestPlan implements TestPlan {
-  const factory _TestPlan(
-      {required final String id,
-      final String name,
-      final String description,
-      final List<TestCase> testCases,
-      required final DateTime createdAt,
-      required final DateTime updatedAt}) = _$TestPlanImpl;
+/// @nodoc
+abstract mixin class _$TestPlanCopyWith<$Res>
+    implements $TestPlanCopyWith<$Res> {
+  factory _$TestPlanCopyWith(_TestPlan value, $Res Function(_TestPlan) _then) =
+      __$TestPlanCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String name,
+      String description,
+      List<TestCase> testCases,
+      DateTime createdAt,
+      DateTime updatedAt});
+}
 
-  factory _TestPlan.fromJson(Map<String, dynamic> json) =
-      _$TestPlanImpl.fromJson;
+/// @nodoc
+class __$TestPlanCopyWithImpl<$Res> implements _$TestPlanCopyWith<$Res> {
+  __$TestPlanCopyWithImpl(this._self, this._then);
 
-  @override
-  String get id;
-  @override
-  String get name;
-  @override
-  String get description;
-  @override
-  List<TestCase> get testCases;
-  @override
-  DateTime get createdAt;
-  @override
-  DateTime get updatedAt;
+  final _TestPlan _self;
+  final $Res Function(_TestPlan) _then;
 
   /// Create a copy of TestPlan
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TestPlanImplCopyWith<_$TestPlanImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? description = null,
+    Object? testCases = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+  }) {
+    return _then(_TestPlan(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      testCases: null == testCases
+          ? _self._testCases
+          : testCases // ignore: cast_nullable_to_non_nullable
+              as List<TestCase>,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+    ));
+  }
 }
+
+// dart format on

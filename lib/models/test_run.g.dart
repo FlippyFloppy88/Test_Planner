@@ -6,8 +6,7 @@ part of 'test_run.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$StepResultImpl _$$StepResultImplFromJson(Map<String, dynamic> json) =>
-    _$StepResultImpl(
+_StepResult _$StepResultFromJson(Map<String, dynamic> json) => _StepResult(
       stepId: json['stepId'] as String,
       stepName: json['stepName'] as String,
       testCaseId: json['testCaseId'] as String,
@@ -28,7 +27,7 @@ _$StepResultImpl _$$StepResultImplFromJson(Map<String, dynamic> json) =>
           json['expectedResult'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$$StepResultImplToJson(_$StepResultImpl instance) =>
+Map<String, dynamic> _$StepResultToJson(_StepResult instance) =>
     <String, dynamic>{
       'stepId': instance.stepId,
       'stepName': instance.stepName,
@@ -52,8 +51,7 @@ const _$StepResultStatusEnumMap = {
   StepResultStatus.skipped: 'skipped',
 };
 
-_$TestRunImpl _$$TestRunImplFromJson(Map<String, dynamic> json) =>
-    _$TestRunImpl(
+_TestRun _$TestRunFromJson(Map<String, dynamic> json) => _TestRun(
       id: json['id'] as String,
       name: json['name'] as String,
       sourceType: json['sourceType'] as String? ?? 'test_plan',
@@ -67,8 +65,7 @@ _$TestRunImpl _$$TestRunImplFromJson(Map<String, dynamic> json) =>
       isComplete: json['isComplete'] as bool? ?? false,
     );
 
-Map<String, dynamic> _$$TestRunImplToJson(_$TestRunImpl instance) =>
-    <String, dynamic>{
+Map<String, dynamic> _$TestRunToJson(_TestRun instance) => <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
       'sourceType': instance.sourceType,

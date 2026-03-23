@@ -1,8 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
+import '../../utils/image_pick_helper.dart';
+import '../common/formatting_toolbar.dart';
 import '../common/procedure_widget.dart';
 import '../common/numbered_drag_handle.dart';
+import '../common/procedure_text.dart';
 
 const _uuid = Uuid();
 
@@ -53,40 +58,203 @@ class TestStepEditor extends StatefulWidget {
 class _TestStepEditorState extends State<TestStepEditor> {
   late TextEditingController _nameCtrl;
   late TextEditingController _storyCtrl;
-  late TextEditingController _expectedDescCtrl;
   bool _expanded = true;
   bool _procedureExpanded = false;
+
+  // ── Expected result items state ─────────────────────────────────────────
+  late List<ExpectedResultItem> _erItems;
+  final Map<String, TextEditingController> _erControllers = {};  final Map<String, FocusNode> _erFocusNodes = {};  final Map<String, bool> _erEditing = {};
+  final Map<String, List<Attachment>> _erStaged = {};
+  final Map<String, String> _erOriginalTexts = {};
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.step.name);
     _storyCtrl = TextEditingController(text: widget.step.storyLink);
-    _expectedDescCtrl =
-        TextEditingController(text: widget.step.expectedResult.description);
+    _erItems = _effectiveItems(widget.step.expectedResult);
+    _syncErControllers();
+  }
+
+  @override
+  void didUpdateWidget(TestStepEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.step.expectedResult != widget.step.expectedResult) {
+      final newItems = _effectiveItems(widget.step.expectedResult);
+      final oldIds = _erItems.map((e) => e.id).toSet();
+      final newIds = newItems.map((e) => e.id).toSet();
+      for (final id in oldIds.difference(newIds)) {
+        _erControllers.remove(id)?.dispose();
+        _erFocusNodes.remove(id)?.dispose();
+        _erEditing.remove(id);
+        _erStaged.remove(id);
+        _erOriginalTexts.remove(id);
+      }
+      _erItems = newItems;
+      _syncErControllers();
+    }
+    if (oldWidget.step.name != widget.step.name &&
+        _nameCtrl.text != widget.step.name) {
+      _nameCtrl.text = widget.step.name;
+    }
+    if (oldWidget.step.storyLink != widget.step.storyLink &&
+        _storyCtrl.text != widget.step.storyLink) {
+      _storyCtrl.text = widget.step.storyLink;
+    }
+  }
+
+  List<ExpectedResultItem> _effectiveItems(ExpectedResult er) {
+    if (er.items.isNotEmpty) return List<ExpectedResultItem>.from(er.items);
+    if (er.description.isNotEmpty) {
+      return [
+        ExpectedResultItem(
+          id: 'legacy_${widget.step.id}',
+          observation: er.description,
+          answerType: er.answerType,
+          minValue: er.minValue,
+          maxValue: er.maxValue,
+          unit: er.unit,
+        ),
+      ];
+    }
+    return [];
+  }
+
+  void _syncErControllers() {
+    for (final item in _erItems) {
+      _erControllers.putIfAbsent(
+          item.id, () => TextEditingController(text: item.observation));
+      _erFocusNodes.putIfAbsent(item.id, () => FocusNode());
+      _erEditing.putIfAbsent(item.id, () => false);
+      _erStaged.putIfAbsent(item.id, () => []);
+    }
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _storyCtrl.dispose();
-    _expectedDescCtrl.dispose();
+    for (final c in _erControllers.values) {
+      c.dispose();
+    }
+    for (final f in _erFocusNodes.values) {
+      f.dispose();
+    }
     super.dispose();
   }
 
   void _emit(TestStep step) => widget.onChanged(step);
 
-  // Path segment helpers removed; images are stored per test plan now.
-
-  void _onFieldChanged() {
+  void _emitErItems(List<ExpectedResultItem> items) {
+    _erItems = items;
     _emit(widget.step.copyWith(
-      name: _nameCtrl.text,
-      storyLink: _storyCtrl.text,
-      expectedResult: widget.step.expectedResult.copyWith(
-        description: _expectedDescCtrl.text,
-      ),
+      expectedResult: widget.step.expectedResult.copyWith(items: items),
     ));
   }
+
+  // ── ER item management ──────────────────────────────────────────────────
+
+  void _addErItem() {
+    final newItem = ExpectedResultItem(id: _uuid.v4(), order: _erItems.length);
+    _erControllers[newItem.id] = TextEditingController();
+    _erFocusNodes[newItem.id] = FocusNode();
+    _erEditing[newItem.id] = true;
+    _erStaged[newItem.id] = [];
+    _erOriginalTexts[newItem.id] = '';
+    setState(() => _erItems = [..._erItems, newItem]);
+    _emitErItems(_erItems);
+  }
+
+  void _deleteErItem(int index) {
+    final id = _erItems[index].id;
+    _erControllers.remove(id)?.dispose();
+    _erFocusNodes.remove(id)?.dispose();
+    _erEditing.remove(id);
+    _erStaged.remove(id);
+    _erOriginalTexts.remove(id);
+    setState(() => _erItems = List<ExpectedResultItem>.from(_erItems)..removeAt(index));
+    _emitErItems(_erItems);
+  }
+
+  void _startErEdit(int index) {
+    final id = _erItems[index].id;
+    _erOriginalTexts[id] = _erItems[index].observation;
+    setState(() {
+      _erEditing[id] = true;
+      _erStaged[id] = [];
+    });
+  }
+
+  void _saveErItem(int index) {
+    final updated = List<ExpectedResultItem>.from(_erItems);
+    final item = updated[index];
+    final id = item.id;
+    updated[index] = item.copyWith(
+      observation: _erControllers[id]!.text,
+      attachments: [...item.attachments, ...(_erStaged[id] ?? [])],
+    );
+    setState(() {
+      _erEditing[id] = false;
+      _erStaged[id] = [];
+      _erOriginalTexts.remove(id);
+      _erItems = updated;
+    });
+    _emitErItems(updated);
+  }
+
+  void _cancelErEdit(int index) {
+    final id = _erItems[index].id;
+    final orig = _erOriginalTexts.remove(id) ?? _erItems[index].observation;
+    _erControllers[id]?.text = orig;
+    _erStaged[id] = [];
+    final updated = List<ExpectedResultItem>.from(_erItems);
+    updated[index] = updated[index].copyWith(observation: orig);
+    setState(() {
+      _erEditing[id] = false;
+      _erItems = updated;
+    });
+    _emitErItems(updated);
+  }
+
+  void _updateErItemType(int index, AnswerType type) {
+    final updated = List<ExpectedResultItem>.from(_erItems);
+    updated[index] = updated[index].copyWith(answerType: type);
+    setState(() => _erItems = updated);
+    _emitErItems(updated);
+  }
+
+  void _updateErValueRange(int index, {double? min, double? max, String? unit}) {
+    final updated = List<ExpectedResultItem>.from(_erItems);
+    final e = updated[index];
+    updated[index] = e.copyWith(
+      minValue: min ?? e.minValue,
+      maxValue: max ?? e.maxValue,
+      unit: unit ?? e.unit,
+    );
+    setState(() => _erItems = updated);
+    _emitErItems(updated);
+  }
+
+  Future<void> _pickErImage(BuildContext context, int index) async {
+    final result = await pickAndInsertImage(
+      context: context,
+      storageFolderPath: widget.storageFolderPath,
+      imageRelativePath: widget.planImageRelativePath,
+    );
+    if (result == null || !mounted) return;
+    final id = _erItems[index].id;
+    _erStaged[id] = [...(_erStaged[id] ?? []), result.attachment];
+    final ctrl = _erControllers[id]!;
+    final sel = ctrl.selection;
+    final ins = sel.isValid ? sel.start : ctrl.text.length;
+    ctrl.text = ctrl.text.replaceRange(
+        ins, sel.isValid ? sel.end : ins, result.placeholder);
+    final updated = List<ExpectedResultItem>.from(_erItems);
+    updated[index] = updated[index].copyWith(observation: ctrl.text);
+    setState(() => _erItems = updated);
+  }
+
+  // ── Sub-step management ─────────────────────────────────────────────────
 
   void _addSubStep() {
     final sub = TestStep(
@@ -130,8 +298,7 @@ class _TestStepEditorState extends State<TestStepEditor> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon:
-                        Icon(_expanded ? Icons.expand_more : Icons.expand_less),
+                    icon: Icon(_expanded ? Icons.expand_more : Icons.expand_less),
                     onPressed: () => setState(() => _expanded = !_expanded),
                   ),
                   if (widget.onDelete != null)
@@ -154,26 +321,28 @@ class _TestStepEditorState extends State<TestStepEditor> {
                       controller: _nameCtrl,
                       decoration: const InputDecoration(
                           labelText: 'Test Name *', isDense: true),
-                      onChanged: (_) => _onFieldChanged(),
+                      maxLines: null,
+                      minLines: 1,
+                      onChanged: (_) =>
+                          _emit(widget.step.copyWith(name: _nameCtrl.text)),
                     ),
                     const SizedBox(height: 16),
                     _ExpandableSection(
                       title: 'Procedure',
                       expanded: _procedureExpanded,
-                      onToggle: () => setState(
-                          () => _procedureExpanded = !_procedureExpanded),
+                      onToggle: () =>
+                          setState(() => _procedureExpanded = !_procedureExpanded),
                       child: ProcedureWidget(
                         items: widget.step.procedure,
                         onChanged: (items) =>
                             _emit(widget.step.copyWith(procedure: items)),
                         storageFolderPath: widget.storageFolderPath,
-                        // Use plan-level image folder instead of per-step folder
                         imageRelativePath: widget.planImageRelativePath,
                         itemHint: 'Describe this procedure step...',
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildExpectedResult(context),
+                    _buildExpectedResults(context),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _storyCtrl,
@@ -181,7 +350,10 @@ class _TestStepEditorState extends State<TestStepEditor> {
                           labelText: 'Story / Bug Link (optional)',
                           hintText: 'https://jira.example.com/...',
                           isDense: true),
-                      onChanged: (_) => _onFieldChanged(),
+                      maxLines: null,
+                      minLines: 1,
+                      onChanged: (_) =>
+                          _emit(widget.step.copyWith(storyLink: _storyCtrl.text)),
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -212,14 +384,15 @@ class _TestStepEditorState extends State<TestStepEditor> {
                         },
                         itemBuilder: (ctx, i) {
                           final sub = widget.step.subSteps[i];
-                            return TestStepEditor(
+                          return TestStepEditor(
                             key: ValueKey(sub.id),
                             step: sub,
                             stepIndex: i,
                             depth: widget.depth + 1,
                             storageFolderPath: widget.storageFolderPath,
                             testCaseName: widget.testCaseName,
-                              parentPathSegment: '',
+                            parentPathSegment: '',
+                            planImageRelativePath: widget.planImageRelativePath,
                             onChanged: (updated) => _updateSubStep(i, updated),
                             onDelete: () => _deleteSubStep(i),
                           );
@@ -235,79 +408,315 @@ class _TestStepEditorState extends State<TestStepEditor> {
     );
   }
 
-  Widget _buildExpectedResult(BuildContext context) {
-    final er = widget.step.expectedResult;
+  Widget _buildExpectedResults(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Expected Result', style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _expectedDescCtrl,
-          decoration: const InputDecoration(
-              labelText: 'Description / Question', isDense: true),
-          maxLines: 2,
-          onChanged: (_) => _onFieldChanged(),
-        ),
-        const SizedBox(height: 8),
-        SegmentedButton<AnswerType>(
-          segments: const [
-            ButtonSegment(value: AnswerType.none, label: Text('None')),
-            ButtonSegment(value: AnswerType.passFail, label: Text('Pass/Fail')),
-            ButtonSegment(value: AnswerType.value, label: Text('Value')),
+        Row(
+          children: [
+            Text('Expected Results',
+                style:
+                    textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+            const Spacer(),
+            TextButton.icon(
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add Expected Result'),
+              onPressed: _addErItem,
+            ),
           ],
-          selected: {er.answerType},
-          onSelectionChanged: (sel) {
-            _emit(widget.step.copyWith(
-              expectedResult: er.copyWith(answerType: sel.first),
-            ));
-          },
         ),
-        if (er.answerType == AnswerType.value) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  initialValue: er.minValue?.toString() ?? '',
-                  decoration: const InputDecoration(
-                      labelText: 'Min Value', isDense: true),
-                  keyboardType: TextInputType.number,
-                  onChanged: (v) => _emit(widget.step.copyWith(
-                    expectedResult: er.copyWith(minValue: double.tryParse(v)),
-                  )),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  initialValue: er.maxValue?.toString() ?? '',
-                  decoration: const InputDecoration(
-                      labelText: 'Max Value', isDense: true),
-                  keyboardType: TextInputType.number,
-                  onChanged: (v) => _emit(widget.step.copyWith(
-                    expectedResult: er.copyWith(maxValue: double.tryParse(v)),
-                  )),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  initialValue: er.unit ?? '',
-                  decoration: const InputDecoration(
-                      labelText: 'Unit (optional)', isDense: true),
-                  onChanged: (v) => _emit(widget.step.copyWith(
-                    expectedResult: er.copyWith(unit: v),
-                  )),
-                ),
-              ),
-            ],
+        const SizedBox(height: 4),
+        if (_erItems.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'No expected results yet. Add one to describe what to look for.',
+              style: textTheme.bodySmall
+                  ?.copyWith(color: colors.onSurfaceVariant),
+            ),
+          )
+        else
+          Column(
+            children: List.generate(_erItems.length, (i) {
+              final item = _erItems[i];
+              final isEditing = _erEditing[item.id] ?? false;
+              return _ErItemCard(
+                key: ValueKey(item.id),
+                index: i,
+                item: item,
+                controller: _erControllers[item.id]!,
+                focusNode: _erFocusNodes[item.id]!,
+                isEditing: isEditing,
+                stagedAttachments: _erStaged[item.id] ?? [],
+                storageFolderPath: widget.storageFolderPath,
+                onEdit: () => _startErEdit(i),
+                onSave: () => _saveErItem(i),
+                onCancel: () => _cancelErEdit(i),
+                onDelete: () => _deleteErItem(i),
+                onPickImage: () => _pickErImage(context, i),
+                onShowImage: (att) =>
+                    showImagePreview(context, att, widget.storageFolderPath),
+                onTypeChanged: (t) => _updateErItemType(i, t),
+                onMinChanged: (v) =>
+                    _updateErValueRange(i, min: double.tryParse(v)),
+                onMaxChanged: (v) =>
+                    _updateErValueRange(i, max: double.tryParse(v)),
+                onUnitChanged: (v) => _updateErValueRange(i, unit: v),
+              );
+            }),
           ),
-        ],
+        const Divider(height: 1),
       ],
     );
   }
 }
+
+// ── Expected result item card ─────────────────────────────────────────────────
+
+class _ErItemCard extends StatelessWidget {
+  final int index;
+  final ExpectedResultItem item;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool isEditing;
+  final List<Attachment> stagedAttachments;
+  final String storageFolderPath;
+  final VoidCallback onEdit;
+  final VoidCallback onSave;
+  final VoidCallback onCancel;
+  final VoidCallback onDelete;
+  final VoidCallback onPickImage;
+  final ValueChanged<Attachment> onShowImage;
+  final ValueChanged<AnswerType> onTypeChanged;
+  final ValueChanged<String> onMinChanged;
+  final ValueChanged<String> onMaxChanged;
+  final ValueChanged<String> onUnitChanged;
+
+  const _ErItemCard({
+    required super.key,
+    required this.index,
+    required this.item,
+    required this.controller,
+    required this.focusNode,
+    required this.isEditing,
+    required this.stagedAttachments,
+    required this.storageFolderPath,
+    required this.onEdit,
+    required this.onSave,
+    required this.onCancel,
+    required this.onDelete,
+    required this.onPickImage,
+    required this.onShowImage,
+    required this.onTypeChanged,
+    required this.onMinChanged,
+    required this.onMaxChanged,
+    required this.onUnitChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final allAttachments = [...item.attachments, ...stagedAttachments];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: colors.outlineVariant),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  margin: const EdgeInsets.only(top: 2, right: 8),
+                  decoration: BoxDecoration(
+                      color: colors.secondaryContainer, shape: BoxShape.circle),
+                  child: Center(
+                    child: Text('${index + 1}',
+                        style: textTheme.labelSmall
+                            ?.copyWith(color: colors.onSecondaryContainer)),
+                  ),
+                ),
+                Expanded(
+                  child: isEditing
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            FormattingToolbar(
+                              controller: controller,
+                              focusNode: focusNode,
+                              attachments: allAttachments,
+                            ),
+                            const SizedBox(height: 4),
+                            TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              decoration: InputDecoration(
+                                hintText:
+                                    'Describe the expected result or question...',
+                                isDense: true,
+                                border: const OutlineInputBorder(),
+                                suffixIcon: IconButton(
+                                  icon: const Icon(Icons.image_outlined, size: 18),
+                                  tooltip: 'Insert image',
+                                  onPressed: onPickImage,
+                                ),
+                              ),
+                              maxLines: null,
+                              minLines: 1,
+                            ),
+                            const SizedBox(height: 6),
+                            Row(children: [
+                              FilledButton.icon(
+                                icon: const Icon(Icons.check, size: 16),
+                                label: const Text('Save'),
+                                onPressed: onSave,
+                              ),
+                              const SizedBox(width: 8),
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.close, size: 16),
+                                label: const Text('Cancel'),
+                                onPressed: onCancel,
+                              ),
+                            ]),
+                          ],
+                        )
+                      : GestureDetector(
+                          onTap: onEdit,
+                          child: item.observation.isEmpty
+                              ? Text('(empty)',
+                                  style: textTheme.bodyMedium?.copyWith(
+                                      color: colors.onSurfaceVariant,
+                                      fontStyle: FontStyle.italic))
+                              : ProcedureText(
+                                  text: item.observation,
+                                  attachments: item.attachments,
+                                  onAttachmentTap: onShowImage,
+                                  style: textTheme.bodyMedium,
+                                ),
+                        ),
+                ),
+                Column(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.edit_outlined,
+                          size: 18, color: colors.primary),
+                      tooltip: 'Edit',
+                      onPressed: isEditing ? null : onEdit,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete_outline,
+                          size: 18, color: colors.error),
+                      tooltip: 'Remove',
+                      onPressed: onDelete,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            if (allAttachments.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: allAttachments.map((att) {
+                  final absPath =
+                      att.filePath.isNotEmpty && storageFolderPath.isNotEmpty
+                          ? p.join(storageFolderPath, att.filePath)
+                          : null;
+                  final imageFile = absPath != null ? File(absPath) : null;
+                  return Tooltip(
+                    message: att.fileName,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(6),
+                      onTap: () => onShowImage(att),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: SizedBox(
+                          width: 64,
+                          height: 64,
+                          child: (imageFile != null && imageFile.existsSync())
+                              ? Image.file(imageFile, fit: BoxFit.cover)
+                              : Container(
+                                  color: Colors.grey.shade200,
+                                  child:
+                                      const Icon(Icons.broken_image, size: 28),
+                                ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+            const SizedBox(height: 8),
+            SegmentedButton<AnswerType>(
+              segments: const [
+                ButtonSegment(value: AnswerType.none, label: Text('None')),
+                ButtonSegment(
+                    value: AnswerType.passFail, label: Text('Pass/Fail')),
+                ButtonSegment(value: AnswerType.value, label: Text('Value')),
+              ],
+              selected: {item.answerType},
+              onSelectionChanged: (sel) => onTypeChanged(sel.first),
+            ),
+            if (item.answerType == AnswerType.value) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: item.minValue?.toString() ?? '',
+                      decoration: const InputDecoration(
+                          labelText: 'Min Value', isDense: true),
+                      keyboardType: TextInputType.number,
+                      onChanged: onMinChanged,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: item.maxValue?.toString() ?? '',
+                      decoration: const InputDecoration(
+                          labelText: 'Max Value', isDense: true),
+                      keyboardType: TextInputType.number,
+                      onChanged: onMaxChanged,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: item.unit ?? '',
+                      decoration: const InputDecoration(
+                          labelText: 'Unit (optional)', isDense: true),
+                      onChanged: onUnitChanged,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Expandable section ────────────────────────────────────────────────────────
 
 class _ExpandableSection extends StatelessWidget {
   final String title;
@@ -343,11 +752,8 @@ class _ExpandableSection extends StatelessWidget {
                         .bodySmall
                         ?.copyWith(color: colors.onSurfaceVariant)),
                 const Spacer(),
-                Icon(
-                  expanded ? Icons.expand_more : Icons.expand_less,
-                  size: 18,
-                  color: colors.onSurfaceVariant,
-                ),
+                Icon(expanded ? Icons.expand_more : Icons.expand_less,
+                    size: 18, color: colors.onSurfaceVariant),
               ],
             ),
           ),

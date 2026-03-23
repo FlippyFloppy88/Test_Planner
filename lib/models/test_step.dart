@@ -7,7 +7,7 @@ part 'test_step.g.dart';
 
 /// A single test step. Steps can be nested recursively via [subSteps].
 @freezed
-class TestStep with _$TestStep {
+abstract class TestStep with _$TestStep {
   const factory TestStep({
     required String id,
     @Default(1) int order,

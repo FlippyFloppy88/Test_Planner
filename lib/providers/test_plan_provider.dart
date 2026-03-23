@@ -62,6 +62,81 @@ class TestPlansNotifier extends AsyncNotifier<List<TestPlan>> {
     await _save(plans);
   }
 
+  // ── image-folder slug (mirrors TestCaseEditorScreen._safeName) ────────────
+  static String _safeName(String s) => s
+      .replaceAll(RegExp(r'[^\w\s-]'), '')
+      .replaceAll(RegExp(r'\s+'), '_')
+      .trim();
+
+  Future<void> duplicateTestPlan(String id, String newName) async {
+    final plans = List<TestPlan>.from(state.valueOrNull ?? []);
+    final original = plans.firstWhere((p) => p.id == id);
+    final now = DateTime.now();
+
+    final oldSlug = _safeName(original.name.isEmpty ? original.id : original.name);
+    final newSlug = _safeName(newName.isEmpty ? id : newName);
+    final oldFolder = 'test_plans/$oldSlug';
+    final newFolder = 'test_plans/$newSlug';
+
+    // Remap one attachment's filePath from the old folder to the new folder.
+    Attachment _remapAtt(Attachment att) {
+      if (att.filePath.startsWith(oldFolder)) {
+        return att.copyWith(
+          filePath: newFolder + att.filePath.substring(oldFolder.length),
+        );
+      }
+      return att;
+    }
+
+    // Remap all attachments in a procedure item list.
+    List<ProcedureItem> _remapProc(List<ProcedureItem> items) =>
+        items.map((pi) => pi.copyWith(
+              attachments: pi.attachments.map(_remapAtt).toList(),
+            )).toList();
+
+    // Remap attachments in an ExpectedResult (both legacy and items list).
+    ExpectedResult _remapEr(ExpectedResult er) => er.copyWith(
+          items: er.items
+              .map((ei) => ei.copyWith(
+                    attachments: ei.attachments.map(_remapAtt).toList(),
+                  ))
+              .toList(),
+        );
+
+    TestStep _remapStep(TestStep s) => s.copyWith(
+          id: _uuid.v4(),
+          procedure: _remapProc(s.procedure),
+          expectedResult: _remapEr(s.expectedResult),
+          subSteps: s.subSteps.map((ss) => ss.copyWith(
+                id: _uuid.v4(),
+                procedure: _remapProc(ss.procedure),
+                expectedResult: _remapEr(ss.expectedResult),
+              )).toList(),
+        );
+
+    final newPlan = original.copyWith(
+      id: _uuid.v4(),
+      name: newName,
+      createdAt: now,
+      updatedAt: now,
+      testCases: original.testCases
+          .map((tc) => tc.copyWith(
+                id: _uuid.v4(),
+                preconditions: _remapProc(tc.preconditions),
+                steps: tc.steps.map(_remapStep).toList(),
+              ))
+          .toList(),
+    );
+
+    plans.add(newPlan);
+    await _save(plans);
+
+    // Copy images after saving so the remapped paths are immediately valid.
+    if (oldSlug != newSlug) {
+      await ref.read(storageServiceProvider).copyRelativeFolder(oldFolder, newFolder);
+    }
+  }
+
   // ── Test Cases ────────────────────────────────────────────────────────────
   Future<void> addTestCase(
       String planId, String name, String description) async {

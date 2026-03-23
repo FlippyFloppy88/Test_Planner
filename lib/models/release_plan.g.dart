@@ -6,9 +6,9 @@ part of 'release_plan.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$ReleasePlanItemTestPlanRefImpl _$$ReleasePlanItemTestPlanRefImplFromJson(
+ReleasePlanItemTestPlanRef _$ReleasePlanItemTestPlanRefFromJson(
         Map<String, dynamic> json) =>
-    _$ReleasePlanItemTestPlanRefImpl(
+    ReleasePlanItemTestPlanRef(
       id: json['id'] as String,
       testPlanId: json['testPlanId'] as String,
       testPlanName: json['testPlanName'] as String,
@@ -16,8 +16,8 @@ _$ReleasePlanItemTestPlanRefImpl _$$ReleasePlanItemTestPlanRefImplFromJson(
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$ReleasePlanItemTestPlanRefImplToJson(
-        _$ReleasePlanItemTestPlanRefImpl instance) =>
+Map<String, dynamic> _$ReleasePlanItemTestPlanRefToJson(
+        ReleasePlanItemTestPlanRef instance) =>
     <String, dynamic>{
       'id': instance.id,
       'testPlanId': instance.testPlanId,
@@ -26,17 +26,17 @@ Map<String, dynamic> _$$ReleasePlanItemTestPlanRefImplToJson(
       'runtimeType': instance.$type,
     };
 
-_$ReleasePlanItemOneOffImpl _$$ReleasePlanItemOneOffImplFromJson(
+ReleasePlanItemOneOff _$ReleasePlanItemOneOffFromJson(
         Map<String, dynamic> json) =>
-    _$ReleasePlanItemOneOffImpl(
+    ReleasePlanItemOneOff(
       id: json['id'] as String,
       testCase: TestCase.fromJson(json['testCase'] as Map<String, dynamic>),
       order: (json['order'] as num?)?.toInt() ?? 0,
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$ReleasePlanItemOneOffImplToJson(
-        _$ReleasePlanItemOneOffImpl instance) =>
+Map<String, dynamic> _$ReleasePlanItemOneOffToJson(
+        ReleasePlanItemOneOff instance) =>
     <String, dynamic>{
       'id': instance.id,
       'testCase': instance.testCase,
@@ -44,8 +44,7 @@ Map<String, dynamic> _$$ReleasePlanItemOneOffImplToJson(
       'runtimeType': instance.$type,
     };
 
-_$ReleasePlanImpl _$$ReleasePlanImplFromJson(Map<String, dynamic> json) =>
-    _$ReleasePlanImpl(
+_ReleasePlan _$ReleasePlanFromJson(Map<String, dynamic> json) => _ReleasePlan(
       id: json['id'] as String,
       productName: json['productName'] as String? ?? '',
       description: json['description'] as String? ?? '',
@@ -57,7 +56,7 @@ _$ReleasePlanImpl _$$ReleasePlanImplFromJson(Map<String, dynamic> json) =>
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
 
-Map<String, dynamic> _$$ReleasePlanImplToJson(_$ReleasePlanImpl instance) =>
+Map<String, dynamic> _$ReleasePlanToJson(_ReleasePlan instance) =>
     <String, dynamic>{
       'id': instance.id,
       'productName': instance.productName,

@@ -9,7 +9,7 @@ part 'procedure_item.g.dart';
 /// Attachments are stored as base64 and referenced by id in the text
 /// using the placeholder syntax [📎 filename](attachment:id).
 @freezed
-class ProcedureItem with _$ProcedureItem {
+abstract class ProcedureItem with _$ProcedureItem {
   const factory ProcedureItem({
     required String id,
     @Default(0) int order,

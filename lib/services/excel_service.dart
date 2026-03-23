@@ -135,7 +135,6 @@ class ExcelService {
     try {
       final excel = Excel.decodeBytes(bytes);
       final sheet = excel['Summary'];
-      if (sheet == null) return null;
 
       String runName = '';
       String sourceName = '';
@@ -168,39 +167,37 @@ class ExcelService {
       // Parse step results
       final stepsSheet = excel['Step Results'];
       final stepResults = <StepResult>[];
-      if (stepsSheet != null) {
-        for (final row in stepsSheet.rows.skip(1)) {
-          if (row.isEmpty || (row[0]?.value == null)) continue;
-          final statusStr = row[2]?.value?.toString() ?? 'notRun';
-          final answerTypeStr = row[3]?.value?.toString() ?? 'none';
-          final sr = StepResult(
-            stepId: '',
-            stepName: row[1]?.value?.toString() ?? '',
-            testCaseId: '',
-            testCaseName: row[0]?.value?.toString() ?? '',
-            status: StepResultStatus.values.firstWhere(
-              (s) => s.name == statusStr,
-              orElse: () => StepResultStatus.notRun,
+      for (final row in stepsSheet.rows.skip(1)) {
+        if (row.isEmpty || (row[0]?.value == null)) continue;
+        final statusStr = row[2]?.value?.toString() ?? 'notRun';
+        final answerTypeStr = row[3]?.value?.toString() ?? 'none';
+        final sr = StepResult(
+          stepId: '',
+          stepName: row[1]?.value?.toString() ?? '',
+          testCaseId: '',
+          testCaseName: row[0]?.value?.toString() ?? '',
+          status: StepResultStatus.values.firstWhere(
+            (s) => s.name == statusStr,
+            orElse: () => StepResultStatus.notRun,
+          ),
+          actualValue: row[7]?.value?.toString(),
+          failureDescription: row[9]?.value?.toString() ?? '',
+          storyLink: row[10]?.value?.toString(),
+          jiraBugLink: row[11]?.value?.toString() ?? '',
+          bugRecordedInJira: row[12]?.value?.toString() == 'Yes',
+          expectedResult: ExpectedResult(
+            description: row[4]?.value?.toString() ?? '',
+            answerType: AnswerType.values.firstWhere(
+              (a) => a.name == answerTypeStr,
+              orElse: () => AnswerType.none,
             ),
-            actualValue: row[7]?.value?.toString(),
-            failureDescription: row[9]?.value?.toString() ?? '',
-            storyLink: row[10]?.value?.toString(),
-            jiraBugLink: row[11]?.value?.toString() ?? '',
-            bugRecordedInJira: row[12]?.value?.toString() == 'Yes',
-            expectedResult: ExpectedResult(
-              description: row[4]?.value?.toString() ?? '',
-              answerType: AnswerType.values.firstWhere(
-                (a) => a.name == answerTypeStr,
-                orElse: () => AnswerType.none,
-              ),
-              minValue: double.tryParse(row[5]?.value?.toString() ?? ''),
-              maxValue: double.tryParse(row[6]?.value?.toString() ?? ''),
-            ),
-          );
-          stepResults.add(sr);
-        }
+            minValue: double.tryParse(row[5]?.value?.toString() ?? ''),
+            maxValue: double.tryParse(row[6]?.value?.toString() ?? ''),
+          ),
+        );
+        stepResults.add(sr);
       }
-
+    
       return TestRun(
         id: 'imported_${DateTime.now().millisecondsSinceEpoch}',
         name: runName,

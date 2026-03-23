@@ -304,6 +304,26 @@ class StorageService {
         .toList());
   }
 
+  /// Copy every file in [srcRelative] into [dstRelative], both relative to
+  /// the storage root.  Non-existing source is silently ignored.
+  Future<void> copyRelativeFolder(String srcRelative, String dstRelative) async {
+    if (!hasFolderOpen) return;
+    final srcDir = Directory(p.join(_folderPath, srcRelative));
+    if (!await srcDir.exists()) return;
+    final dstDir = Directory(p.join(_folderPath, dstRelative));
+    if (!await dstDir.exists()) await dstDir.create(recursive: true);
+    await for (final entity in srcDir.list(recursive: true)) {
+      if (entity is File) {
+        final rel = p.relative(entity.path, from: srcDir.path);
+        final dest = File(p.join(dstDir.path, rel));
+        final destParent = dest.parent;
+        if (!await destParent.exists()) await destParent.create(recursive: true);
+        await entity.copy(dest.path);
+      }
+    }
+    dev.log('[StorageService] copied folder $srcRelative -> $dstRelative');
+  }
+
   /// Delete a folder under the storage root given its relative path.
   Future<void> deleteRelativeFolder(String relativePath) async {
     if (!hasFolderOpen) return;

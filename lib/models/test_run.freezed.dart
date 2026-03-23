@@ -1,3 +1,4 @@
+// dart format width=80
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
@@ -9,52 +10,100 @@ part of 'test_run.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-StepResult _$StepResultFromJson(Map<String, dynamic> json) {
-  return _StepResult.fromJson(json);
-}
 
 /// @nodoc
 mixin _$StepResult {
-  String get stepId => throw _privateConstructorUsedError;
-  String get stepName => throw _privateConstructorUsedError;
-  String get testCaseId => throw _privateConstructorUsedError;
-  String get testCaseName => throw _privateConstructorUsedError;
-  StepResultStatus get status => throw _privateConstructorUsedError;
+  String get stepId;
+  String get stepName;
+  String get testCaseId;
+  String get testCaseName;
+  StepResultStatus get status;
 
   /// Procedure items to display during execution
-  List<ProcedureItem> get procedure => throw _privateConstructorUsedError;
+  List<ProcedureItem> get procedure;
 
   /// Actual value entered by the user (for value-type answers)
-  String? get actualValue => throw _privateConstructorUsedError;
+  String? get actualValue;
 
   /// Actual pass/fail answer
-  bool? get actualPassFail => throw _privateConstructorUsedError;
-  String get failureDescription => throw _privateConstructorUsedError;
-  String get jiraBugLink => throw _privateConstructorUsedError;
-  bool get bugRecordedInJira => throw _privateConstructorUsedError;
-  String? get storyLink => throw _privateConstructorUsedError;
-  ExpectedResult get expectedResult => throw _privateConstructorUsedError;
-
-  /// Serializes this StepResult to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  bool? get actualPassFail;
+  String get failureDescription;
+  String get jiraBugLink;
+  bool get bugRecordedInJira;
+  String? get storyLink;
+  ExpectedResult get expectedResult;
 
   /// Create a copy of StepResult
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
   $StepResultCopyWith<StepResult> get copyWith =>
-      throw _privateConstructorUsedError;
+      _$StepResultCopyWithImpl<StepResult>(this as StepResult, _$identity);
+
+  /// Serializes this StepResult to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is StepResult &&
+            (identical(other.stepId, stepId) || other.stepId == stepId) &&
+            (identical(other.stepName, stepName) ||
+                other.stepName == stepName) &&
+            (identical(other.testCaseId, testCaseId) ||
+                other.testCaseId == testCaseId) &&
+            (identical(other.testCaseName, testCaseName) ||
+                other.testCaseName == testCaseName) &&
+            (identical(other.status, status) || other.status == status) &&
+            const DeepCollectionEquality().equals(other.procedure, procedure) &&
+            (identical(other.actualValue, actualValue) ||
+                other.actualValue == actualValue) &&
+            (identical(other.actualPassFail, actualPassFail) ||
+                other.actualPassFail == actualPassFail) &&
+            (identical(other.failureDescription, failureDescription) ||
+                other.failureDescription == failureDescription) &&
+            (identical(other.jiraBugLink, jiraBugLink) ||
+                other.jiraBugLink == jiraBugLink) &&
+            (identical(other.bugRecordedInJira, bugRecordedInJira) ||
+                other.bugRecordedInJira == bugRecordedInJira) &&
+            (identical(other.storyLink, storyLink) ||
+                other.storyLink == storyLink) &&
+            (identical(other.expectedResult, expectedResult) ||
+                other.expectedResult == expectedResult));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      stepId,
+      stepName,
+      testCaseId,
+      testCaseName,
+      status,
+      const DeepCollectionEquality().hash(procedure),
+      actualValue,
+      actualPassFail,
+      failureDescription,
+      jiraBugLink,
+      bugRecordedInJira,
+      storyLink,
+      expectedResult);
+
+  @override
+  String toString() {
+    return 'StepResult(stepId: $stepId, stepName: $stepName, testCaseId: $testCaseId, testCaseName: $testCaseName, status: $status, procedure: $procedure, actualValue: $actualValue, actualPassFail: $actualPassFail, failureDescription: $failureDescription, jiraBugLink: $jiraBugLink, bugRecordedInJira: $bugRecordedInJira, storyLink: $storyLink, expectedResult: $expectedResult)';
+  }
 }
 
 /// @nodoc
-abstract class $StepResultCopyWith<$Res> {
+abstract mixin class $StepResultCopyWith<$Res> {
   factory $StepResultCopyWith(
-          StepResult value, $Res Function(StepResult) then) =
-      _$StepResultCopyWithImpl<$Res, StepResult>;
+          StepResult value, $Res Function(StepResult) _then) =
+      _$StepResultCopyWithImpl;
   @useResult
   $Res call(
       {String stepId,
@@ -75,14 +124,11 @@ abstract class $StepResultCopyWith<$Res> {
 }
 
 /// @nodoc
-class _$StepResultCopyWithImpl<$Res, $Val extends StepResult>
-    implements $StepResultCopyWith<$Res> {
-  _$StepResultCopyWithImpl(this._value, this._then);
+class _$StepResultCopyWithImpl<$Res> implements $StepResultCopyWith<$Res> {
+  _$StepResultCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final StepResult _self;
+  final $Res Function(StepResult) _then;
 
   /// Create a copy of StepResult
   /// with the given fields replaced by the non-null parameter values.
@@ -103,60 +149,60 @@ class _$StepResultCopyWithImpl<$Res, $Val extends StepResult>
     Object? storyLink = freezed,
     Object? expectedResult = null,
   }) {
-    return _then(_value.copyWith(
+    return _then(_self.copyWith(
       stepId: null == stepId
-          ? _value.stepId
+          ? _self.stepId
           : stepId // ignore: cast_nullable_to_non_nullable
               as String,
       stepName: null == stepName
-          ? _value.stepName
+          ? _self.stepName
           : stepName // ignore: cast_nullable_to_non_nullable
               as String,
       testCaseId: null == testCaseId
-          ? _value.testCaseId
+          ? _self.testCaseId
           : testCaseId // ignore: cast_nullable_to_non_nullable
               as String,
       testCaseName: null == testCaseName
-          ? _value.testCaseName
+          ? _self.testCaseName
           : testCaseName // ignore: cast_nullable_to_non_nullable
               as String,
       status: null == status
-          ? _value.status
+          ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
               as StepResultStatus,
       procedure: null == procedure
-          ? _value.procedure
+          ? _self.procedure
           : procedure // ignore: cast_nullable_to_non_nullable
               as List<ProcedureItem>,
       actualValue: freezed == actualValue
-          ? _value.actualValue
+          ? _self.actualValue
           : actualValue // ignore: cast_nullable_to_non_nullable
               as String?,
       actualPassFail: freezed == actualPassFail
-          ? _value.actualPassFail
+          ? _self.actualPassFail
           : actualPassFail // ignore: cast_nullable_to_non_nullable
               as bool?,
       failureDescription: null == failureDescription
-          ? _value.failureDescription
+          ? _self.failureDescription
           : failureDescription // ignore: cast_nullable_to_non_nullable
               as String,
       jiraBugLink: null == jiraBugLink
-          ? _value.jiraBugLink
+          ? _self.jiraBugLink
           : jiraBugLink // ignore: cast_nullable_to_non_nullable
               as String,
       bugRecordedInJira: null == bugRecordedInJira
-          ? _value.bugRecordedInJira
+          ? _self.bugRecordedInJira
           : bugRecordedInJira // ignore: cast_nullable_to_non_nullable
               as bool,
       storyLink: freezed == storyLink
-          ? _value.storyLink
+          ? _self.storyLink
           : storyLink // ignore: cast_nullable_to_non_nullable
               as String?,
       expectedResult: null == expectedResult
-          ? _value.expectedResult
+          ? _self.expectedResult
           : expectedResult // ignore: cast_nullable_to_non_nullable
               as ExpectedResult,
-    ) as $Val);
+    ));
   }
 
   /// Create a copy of StepResult
@@ -164,127 +210,16 @@ class _$StepResultCopyWithImpl<$Res, $Val extends StepResult>
   @override
   @pragma('vm:prefer-inline')
   $ExpectedResultCopyWith<$Res> get expectedResult {
-    return $ExpectedResultCopyWith<$Res>(_value.expectedResult, (value) {
-      return _then(_value.copyWith(expectedResult: value) as $Val);
+    return $ExpectedResultCopyWith<$Res>(_self.expectedResult, (value) {
+      return _then(_self.copyWith(expectedResult: value));
     });
   }
 }
 
 /// @nodoc
-abstract class _$$StepResultImplCopyWith<$Res>
-    implements $StepResultCopyWith<$Res> {
-  factory _$$StepResultImplCopyWith(
-          _$StepResultImpl value, $Res Function(_$StepResultImpl) then) =
-      __$$StepResultImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {String stepId,
-      String stepName,
-      String testCaseId,
-      String testCaseName,
-      StepResultStatus status,
-      List<ProcedureItem> procedure,
-      String? actualValue,
-      bool? actualPassFail,
-      String failureDescription,
-      String jiraBugLink,
-      bool bugRecordedInJira,
-      String? storyLink,
-      ExpectedResult expectedResult});
-
-  @override
-  $ExpectedResultCopyWith<$Res> get expectedResult;
-}
-
-/// @nodoc
-class __$$StepResultImplCopyWithImpl<$Res>
-    extends _$StepResultCopyWithImpl<$Res, _$StepResultImpl>
-    implements _$$StepResultImplCopyWith<$Res> {
-  __$$StepResultImplCopyWithImpl(
-      _$StepResultImpl _value, $Res Function(_$StepResultImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of StepResult
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? stepId = null,
-    Object? stepName = null,
-    Object? testCaseId = null,
-    Object? testCaseName = null,
-    Object? status = null,
-    Object? procedure = null,
-    Object? actualValue = freezed,
-    Object? actualPassFail = freezed,
-    Object? failureDescription = null,
-    Object? jiraBugLink = null,
-    Object? bugRecordedInJira = null,
-    Object? storyLink = freezed,
-    Object? expectedResult = null,
-  }) {
-    return _then(_$StepResultImpl(
-      stepId: null == stepId
-          ? _value.stepId
-          : stepId // ignore: cast_nullable_to_non_nullable
-              as String,
-      stepName: null == stepName
-          ? _value.stepName
-          : stepName // ignore: cast_nullable_to_non_nullable
-              as String,
-      testCaseId: null == testCaseId
-          ? _value.testCaseId
-          : testCaseId // ignore: cast_nullable_to_non_nullable
-              as String,
-      testCaseName: null == testCaseName
-          ? _value.testCaseName
-          : testCaseName // ignore: cast_nullable_to_non_nullable
-              as String,
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as StepResultStatus,
-      procedure: null == procedure
-          ? _value._procedure
-          : procedure // ignore: cast_nullable_to_non_nullable
-              as List<ProcedureItem>,
-      actualValue: freezed == actualValue
-          ? _value.actualValue
-          : actualValue // ignore: cast_nullable_to_non_nullable
-              as String?,
-      actualPassFail: freezed == actualPassFail
-          ? _value.actualPassFail
-          : actualPassFail // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      failureDescription: null == failureDescription
-          ? _value.failureDescription
-          : failureDescription // ignore: cast_nullable_to_non_nullable
-              as String,
-      jiraBugLink: null == jiraBugLink
-          ? _value.jiraBugLink
-          : jiraBugLink // ignore: cast_nullable_to_non_nullable
-              as String,
-      bugRecordedInJira: null == bugRecordedInJira
-          ? _value.bugRecordedInJira
-          : bugRecordedInJira // ignore: cast_nullable_to_non_nullable
-              as bool,
-      storyLink: freezed == storyLink
-          ? _value.storyLink
-          : storyLink // ignore: cast_nullable_to_non_nullable
-              as String?,
-      expectedResult: null == expectedResult
-          ? _value.expectedResult
-          : expectedResult // ignore: cast_nullable_to_non_nullable
-              as ExpectedResult,
-    ));
-  }
-}
-
-/// @nodoc
 @JsonSerializable()
-class _$StepResultImpl implements _StepResult {
-  const _$StepResultImpl(
+class _StepResult implements StepResult {
+  const _StepResult(
       {required this.stepId,
       required this.stepName,
       required this.testCaseId,
@@ -299,9 +234,8 @@ class _$StepResultImpl implements _StepResult {
       this.storyLink,
       required this.expectedResult})
       : _procedure = procedure;
-
-  factory _$StepResultImpl.fromJson(Map<String, dynamic> json) =>
-      _$$StepResultImplFromJson(json);
+  factory _StepResult.fromJson(Map<String, dynamic> json) =>
+      _$StepResultFromJson(json);
 
   @override
   final String stepId;
@@ -348,16 +282,26 @@ class _$StepResultImpl implements _StepResult {
   @override
   final ExpectedResult expectedResult;
 
+  /// Create a copy of StepResult
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'StepResult(stepId: $stepId, stepName: $stepName, testCaseId: $testCaseId, testCaseName: $testCaseName, status: $status, procedure: $procedure, actualValue: $actualValue, actualPassFail: $actualPassFail, failureDescription: $failureDescription, jiraBugLink: $jiraBugLink, bugRecordedInJira: $bugRecordedInJira, storyLink: $storyLink, expectedResult: $expectedResult)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$StepResultCopyWith<_StepResult> get copyWith =>
+      __$StepResultCopyWithImpl<_StepResult>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$StepResultToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$StepResultImpl &&
+            other is _StepResult &&
             (identical(other.stepId, stepId) || other.stepId == stepId) &&
             (identical(other.stepName, stepName) ||
                 other.stepName == stepName) &&
@@ -402,191 +346,199 @@ class _$StepResultImpl implements _StepResult {
       storyLink,
       expectedResult);
 
-  /// Create a copy of StepResult
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$StepResultImplCopyWith<_$StepResultImpl> get copyWith =>
-      __$$StepResultImplCopyWithImpl<_$StepResultImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$StepResultImplToJson(
-      this,
-    );
+  String toString() {
+    return 'StepResult(stepId: $stepId, stepName: $stepName, testCaseId: $testCaseId, testCaseName: $testCaseName, status: $status, procedure: $procedure, actualValue: $actualValue, actualPassFail: $actualPassFail, failureDescription: $failureDescription, jiraBugLink: $jiraBugLink, bugRecordedInJira: $bugRecordedInJira, storyLink: $storyLink, expectedResult: $expectedResult)';
   }
 }
 
-abstract class _StepResult implements StepResult {
-  const factory _StepResult(
-      {required final String stepId,
-      required final String stepName,
-      required final String testCaseId,
-      required final String testCaseName,
-      final StepResultStatus status,
-      final List<ProcedureItem> procedure,
-      final String? actualValue,
-      final bool? actualPassFail,
-      final String failureDescription,
-      final String jiraBugLink,
-      final bool bugRecordedInJira,
-      final String? storyLink,
-      required final ExpectedResult expectedResult}) = _$StepResultImpl;
+/// @nodoc
+abstract mixin class _$StepResultCopyWith<$Res>
+    implements $StepResultCopyWith<$Res> {
+  factory _$StepResultCopyWith(
+          _StepResult value, $Res Function(_StepResult) _then) =
+      __$StepResultCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String stepId,
+      String stepName,
+      String testCaseId,
+      String testCaseName,
+      StepResultStatus status,
+      List<ProcedureItem> procedure,
+      String? actualValue,
+      bool? actualPassFail,
+      String failureDescription,
+      String jiraBugLink,
+      bool bugRecordedInJira,
+      String? storyLink,
+      ExpectedResult expectedResult});
 
-  factory _StepResult.fromJson(Map<String, dynamic> json) =
-      _$StepResultImpl.fromJson;
+  @override
+  $ExpectedResultCopyWith<$Res> get expectedResult;
+}
 
-  @override
-  String get stepId;
-  @override
-  String get stepName;
-  @override
-  String get testCaseId;
-  @override
-  String get testCaseName;
-  @override
-  StepResultStatus get status;
+/// @nodoc
+class __$StepResultCopyWithImpl<$Res> implements _$StepResultCopyWith<$Res> {
+  __$StepResultCopyWithImpl(this._self, this._then);
 
-  /// Procedure items to display during execution
-  @override
-  List<ProcedureItem> get procedure;
-
-  /// Actual value entered by the user (for value-type answers)
-  @override
-  String? get actualValue;
-
-  /// Actual pass/fail answer
-  @override
-  bool? get actualPassFail;
-  @override
-  String get failureDescription;
-  @override
-  String get jiraBugLink;
-  @override
-  bool get bugRecordedInJira;
-  @override
-  String? get storyLink;
-  @override
-  ExpectedResult get expectedResult;
+  final _StepResult _self;
+  final $Res Function(_StepResult) _then;
 
   /// Create a copy of StepResult
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$StepResultImplCopyWith<_$StepResultImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? stepId = null,
+    Object? stepName = null,
+    Object? testCaseId = null,
+    Object? testCaseName = null,
+    Object? status = null,
+    Object? procedure = null,
+    Object? actualValue = freezed,
+    Object? actualPassFail = freezed,
+    Object? failureDescription = null,
+    Object? jiraBugLink = null,
+    Object? bugRecordedInJira = null,
+    Object? storyLink = freezed,
+    Object? expectedResult = null,
+  }) {
+    return _then(_StepResult(
+      stepId: null == stepId
+          ? _self.stepId
+          : stepId // ignore: cast_nullable_to_non_nullable
+              as String,
+      stepName: null == stepName
+          ? _self.stepName
+          : stepName // ignore: cast_nullable_to_non_nullable
+              as String,
+      testCaseId: null == testCaseId
+          ? _self.testCaseId
+          : testCaseId // ignore: cast_nullable_to_non_nullable
+              as String,
+      testCaseName: null == testCaseName
+          ? _self.testCaseName
+          : testCaseName // ignore: cast_nullable_to_non_nullable
+              as String,
+      status: null == status
+          ? _self.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as StepResultStatus,
+      procedure: null == procedure
+          ? _self._procedure
+          : procedure // ignore: cast_nullable_to_non_nullable
+              as List<ProcedureItem>,
+      actualValue: freezed == actualValue
+          ? _self.actualValue
+          : actualValue // ignore: cast_nullable_to_non_nullable
+              as String?,
+      actualPassFail: freezed == actualPassFail
+          ? _self.actualPassFail
+          : actualPassFail // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      failureDescription: null == failureDescription
+          ? _self.failureDescription
+          : failureDescription // ignore: cast_nullable_to_non_nullable
+              as String,
+      jiraBugLink: null == jiraBugLink
+          ? _self.jiraBugLink
+          : jiraBugLink // ignore: cast_nullable_to_non_nullable
+              as String,
+      bugRecordedInJira: null == bugRecordedInJira
+          ? _self.bugRecordedInJira
+          : bugRecordedInJira // ignore: cast_nullable_to_non_nullable
+              as bool,
+      storyLink: freezed == storyLink
+          ? _self.storyLink
+          : storyLink // ignore: cast_nullable_to_non_nullable
+              as String?,
+      expectedResult: null == expectedResult
+          ? _self.expectedResult
+          : expectedResult // ignore: cast_nullable_to_non_nullable
+              as ExpectedResult,
+    ));
+  }
 
-TestRun _$TestRunFromJson(Map<String, dynamic> json) {
-  return _TestRun.fromJson(json);
+  /// Create a copy of StepResult
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $ExpectedResultCopyWith<$Res> get expectedResult {
+    return $ExpectedResultCopyWith<$Res>(_self.expectedResult, (value) {
+      return _then(_self.copyWith(expectedResult: value));
+    });
+  }
 }
 
 /// @nodoc
 mixin _$TestRun {
-  String get id => throw _privateConstructorUsedError;
-  String get name => throw _privateConstructorUsedError;
+  String get id;
+  String get name;
 
   /// 'test_plan' | 'release_plan'
-  String get sourceType => throw _privateConstructorUsedError;
-  String get sourceName => throw _privateConstructorUsedError;
-  String? get releaseVersion => throw _privateConstructorUsedError;
-  DateTime get executedAt => throw _privateConstructorUsedError;
-  List<StepResult> get stepResults => throw _privateConstructorUsedError;
-  bool get isComplete => throw _privateConstructorUsedError;
-
-  /// Serializes this TestRun to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get sourceType;
+  String get sourceName;
+  String? get releaseVersion;
+  DateTime get executedAt;
+  List<StepResult> get stepResults;
+  bool get isComplete;
 
   /// Create a copy of TestRun
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $TestRunCopyWith<TestRun> get copyWith => throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $TestRunCopyWith<$Res> {
-  factory $TestRunCopyWith(TestRun value, $Res Function(TestRun) then) =
-      _$TestRunCopyWithImpl<$Res, TestRun>;
-  @useResult
-  $Res call(
-      {String id,
-      String name,
-      String sourceType,
-      String sourceName,
-      String? releaseVersion,
-      DateTime executedAt,
-      List<StepResult> stepResults,
-      bool isComplete});
-}
-
-/// @nodoc
-class _$TestRunCopyWithImpl<$Res, $Val extends TestRun>
-    implements $TestRunCopyWith<$Res> {
-  _$TestRunCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of TestRun
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $TestRunCopyWith<TestRun> get copyWith =>
+      _$TestRunCopyWithImpl<TestRun>(this as TestRun, _$identity);
+
+  /// Serializes this TestRun to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? id = null,
-    Object? name = null,
-    Object? sourceType = null,
-    Object? sourceName = null,
-    Object? releaseVersion = freezed,
-    Object? executedAt = null,
-    Object? stepResults = null,
-    Object? isComplete = null,
-  }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      sourceType: null == sourceType
-          ? _value.sourceType
-          : sourceType // ignore: cast_nullable_to_non_nullable
-              as String,
-      sourceName: null == sourceName
-          ? _value.sourceName
-          : sourceName // ignore: cast_nullable_to_non_nullable
-              as String,
-      releaseVersion: freezed == releaseVersion
-          ? _value.releaseVersion
-          : releaseVersion // ignore: cast_nullable_to_non_nullable
-              as String?,
-      executedAt: null == executedAt
-          ? _value.executedAt
-          : executedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      stepResults: null == stepResults
-          ? _value.stepResults
-          : stepResults // ignore: cast_nullable_to_non_nullable
-              as List<StepResult>,
-      isComplete: null == isComplete
-          ? _value.isComplete
-          : isComplete // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is TestRun &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.sourceType, sourceType) ||
+                other.sourceType == sourceType) &&
+            (identical(other.sourceName, sourceName) ||
+                other.sourceName == sourceName) &&
+            (identical(other.releaseVersion, releaseVersion) ||
+                other.releaseVersion == releaseVersion) &&
+            (identical(other.executedAt, executedAt) ||
+                other.executedAt == executedAt) &&
+            const DeepCollectionEquality()
+                .equals(other.stepResults, stepResults) &&
+            (identical(other.isComplete, isComplete) ||
+                other.isComplete == isComplete));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      name,
+      sourceType,
+      sourceName,
+      releaseVersion,
+      executedAt,
+      const DeepCollectionEquality().hash(stepResults),
+      isComplete);
+
+  @override
+  String toString() {
+    return 'TestRun(id: $id, name: $name, sourceType: $sourceType, sourceName: $sourceName, releaseVersion: $releaseVersion, executedAt: $executedAt, stepResults: $stepResults, isComplete: $isComplete)';
   }
 }
 
 /// @nodoc
-abstract class _$$TestRunImplCopyWith<$Res> implements $TestRunCopyWith<$Res> {
-  factory _$$TestRunImplCopyWith(
-          _$TestRunImpl value, $Res Function(_$TestRunImpl) then) =
-      __$$TestRunImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $TestRunCopyWith<$Res> {
+  factory $TestRunCopyWith(TestRun value, $Res Function(TestRun) _then) =
+      _$TestRunCopyWithImpl;
   @useResult
   $Res call(
       {String id,
@@ -600,12 +552,11 @@ abstract class _$$TestRunImplCopyWith<$Res> implements $TestRunCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$TestRunImplCopyWithImpl<$Res>
-    extends _$TestRunCopyWithImpl<$Res, _$TestRunImpl>
-    implements _$$TestRunImplCopyWith<$Res> {
-  __$$TestRunImplCopyWithImpl(
-      _$TestRunImpl _value, $Res Function(_$TestRunImpl) _then)
-      : super(_value, _then);
+class _$TestRunCopyWithImpl<$Res> implements $TestRunCopyWith<$Res> {
+  _$TestRunCopyWithImpl(this._self, this._then);
+
+  final TestRun _self;
+  final $Res Function(TestRun) _then;
 
   /// Create a copy of TestRun
   /// with the given fields replaced by the non-null parameter values.
@@ -621,37 +572,37 @@ class __$$TestRunImplCopyWithImpl<$Res>
     Object? stepResults = null,
     Object? isComplete = null,
   }) {
-    return _then(_$TestRunImpl(
+    return _then(_self.copyWith(
       id: null == id
-          ? _value.id
+          ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
       name: null == name
-          ? _value.name
+          ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
       sourceType: null == sourceType
-          ? _value.sourceType
+          ? _self.sourceType
           : sourceType // ignore: cast_nullable_to_non_nullable
               as String,
       sourceName: null == sourceName
-          ? _value.sourceName
+          ? _self.sourceName
           : sourceName // ignore: cast_nullable_to_non_nullable
               as String,
       releaseVersion: freezed == releaseVersion
-          ? _value.releaseVersion
+          ? _self.releaseVersion
           : releaseVersion // ignore: cast_nullable_to_non_nullable
               as String?,
       executedAt: null == executedAt
-          ? _value.executedAt
+          ? _self.executedAt
           : executedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
       stepResults: null == stepResults
-          ? _value._stepResults
+          ? _self.stepResults
           : stepResults // ignore: cast_nullable_to_non_nullable
               as List<StepResult>,
       isComplete: null == isComplete
-          ? _value.isComplete
+          ? _self.isComplete
           : isComplete // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
@@ -660,8 +611,8 @@ class __$$TestRunImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$TestRunImpl extends _TestRun {
-  const _$TestRunImpl(
+class _TestRun extends TestRun {
+  const _TestRun(
       {required this.id,
       required this.name,
       this.sourceType = 'test_plan',
@@ -672,9 +623,8 @@ class _$TestRunImpl extends _TestRun {
       this.isComplete = false})
       : _stepResults = stepResults,
         super._();
-
-  factory _$TestRunImpl.fromJson(Map<String, dynamic> json) =>
-      _$$TestRunImplFromJson(json);
+  factory _TestRun.fromJson(Map<String, dynamic> json) =>
+      _$TestRunFromJson(json);
 
   @override
   final String id;
@@ -704,16 +654,26 @@ class _$TestRunImpl extends _TestRun {
   @JsonKey()
   final bool isComplete;
 
+  /// Create a copy of TestRun
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TestRun(id: $id, name: $name, sourceType: $sourceType, sourceName: $sourceName, releaseVersion: $releaseVersion, executedAt: $executedAt, stepResults: $stepResults, isComplete: $isComplete)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$TestRunCopyWith<_TestRun> get copyWith =>
+      __$TestRunCopyWithImpl<_TestRun>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TestRunToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TestRunImpl &&
+            other is _TestRun &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.sourceType, sourceType) ||
@@ -743,59 +703,85 @@ class _$TestRunImpl extends _TestRun {
       const DeepCollectionEquality().hash(_stepResults),
       isComplete);
 
-  /// Create a copy of TestRun
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$TestRunImplCopyWith<_$TestRunImpl> get copyWith =>
-      __$$TestRunImplCopyWithImpl<_$TestRunImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$TestRunImplToJson(
-      this,
-    );
+  String toString() {
+    return 'TestRun(id: $id, name: $name, sourceType: $sourceType, sourceName: $sourceName, releaseVersion: $releaseVersion, executedAt: $executedAt, stepResults: $stepResults, isComplete: $isComplete)';
   }
 }
 
-abstract class _TestRun extends TestRun {
-  const factory _TestRun(
-      {required final String id,
-      required final String name,
-      final String sourceType,
-      required final String sourceName,
-      final String? releaseVersion,
-      required final DateTime executedAt,
-      final List<StepResult> stepResults,
-      final bool isComplete}) = _$TestRunImpl;
-  const _TestRun._() : super._();
+/// @nodoc
+abstract mixin class _$TestRunCopyWith<$Res> implements $TestRunCopyWith<$Res> {
+  factory _$TestRunCopyWith(_TestRun value, $Res Function(_TestRun) _then) =
+      __$TestRunCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String name,
+      String sourceType,
+      String sourceName,
+      String? releaseVersion,
+      DateTime executedAt,
+      List<StepResult> stepResults,
+      bool isComplete});
+}
 
-  factory _TestRun.fromJson(Map<String, dynamic> json) = _$TestRunImpl.fromJson;
+/// @nodoc
+class __$TestRunCopyWithImpl<$Res> implements _$TestRunCopyWith<$Res> {
+  __$TestRunCopyWithImpl(this._self, this._then);
 
-  @override
-  String get id;
-  @override
-  String get name;
-
-  /// 'test_plan' | 'release_plan'
-  @override
-  String get sourceType;
-  @override
-  String get sourceName;
-  @override
-  String? get releaseVersion;
-  @override
-  DateTime get executedAt;
-  @override
-  List<StepResult> get stepResults;
-  @override
-  bool get isComplete;
+  final _TestRun _self;
+  final $Res Function(_TestRun) _then;
 
   /// Create a copy of TestRun
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TestRunImplCopyWith<_$TestRunImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? sourceType = null,
+    Object? sourceName = null,
+    Object? releaseVersion = freezed,
+    Object? executedAt = null,
+    Object? stepResults = null,
+    Object? isComplete = null,
+  }) {
+    return _then(_TestRun(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      sourceType: null == sourceType
+          ? _self.sourceType
+          : sourceType // ignore: cast_nullable_to_non_nullable
+              as String,
+      sourceName: null == sourceName
+          ? _self.sourceName
+          : sourceName // ignore: cast_nullable_to_non_nullable
+              as String,
+      releaseVersion: freezed == releaseVersion
+          ? _self.releaseVersion
+          : releaseVersion // ignore: cast_nullable_to_non_nullable
+              as String?,
+      executedAt: null == executedAt
+          ? _self.executedAt
+          : executedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      stepResults: null == stepResults
+          ? _self._stepResults
+          : stepResults // ignore: cast_nullable_to_non_nullable
+              as List<StepResult>,
+      isComplete: null == isComplete
+          ? _self.isComplete
+          : isComplete // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
 }
+
+// dart format on

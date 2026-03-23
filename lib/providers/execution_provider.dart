@@ -134,17 +134,16 @@ class ExecutionNotifier extends Notifier<ExecutionState?> {
   }) {
     final cases = <TestCase>[];
     for (final item in plan.items) {
-      item.map(
-        testPlanRef: (ref) {
-          final tp = allTestPlans.firstWhere(
-            (p) => p.id == ref.testPlanId,
-            orElse: () =>
-                throw StateError('Test plan not found: ${ref.testPlanId}'),
-          );
-          cases.addAll(tp.testCases);
-        },
-        oneOff: (o) => cases.add(o.testCase),
-      );
+      if (item is ReleasePlanItemTestPlanRef) {
+        final tp = allTestPlans.firstWhere(
+          (p) => p.id == item.testPlanId,
+          orElse: () =>
+              throw StateError('Test plan not found: ${item.testPlanId}'),
+        );
+        cases.addAll(tp.testCases);
+      } else if (item is ReleasePlanItemOneOff) {
+        cases.add(item.testCase);
+      }
     }
     final steps = ExecutionService.flattenTestCases(cases);
     final now = DateTime.now();

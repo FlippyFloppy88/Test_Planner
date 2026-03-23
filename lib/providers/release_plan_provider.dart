@@ -85,11 +85,11 @@ class ReleasePlansNotifier extends AsyncNotifier<List<ReleasePlan>> {
     final item = items.removeAt(oldIndex);
     items.insert(newIndex, item);
     // Update order field
-    final reordered = items.indexed.map((e) {
-      return e.$2.map(
-        testPlanRef: (r) => r.copyWith(order: e.$1),
-        oneOff: (o) => o.copyWith(order: e.$1),
-      );
+    final reordered = items.indexed.map<ReleasePlanItem>((e) {
+      final it = e.$2;
+      if (it is ReleasePlanItemTestPlanRef) return it.copyWith(order: e.$1);
+      if (it is ReleasePlanItemOneOff) return it.copyWith(order: e.$1);
+      return it;
     }).toList();
     plans[idx] =
         plans[idx].copyWith(items: reordered, updatedAt: DateTime.now());

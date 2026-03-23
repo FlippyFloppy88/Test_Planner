@@ -6,8 +6,8 @@ part of 'procedure_item.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$ProcedureItemImpl _$$ProcedureItemImplFromJson(Map<String, dynamic> json) =>
-    _$ProcedureItemImpl(
+_ProcedureItem _$ProcedureItemFromJson(Map<String, dynamic> json) =>
+    _ProcedureItem(
       id: json['id'] as String,
       order: (json['order'] as num?)?.toInt() ?? 0,
       text: json['text'] as String? ?? '',
@@ -17,7 +17,7 @@ _$ProcedureItemImpl _$$ProcedureItemImplFromJson(Map<String, dynamic> json) =>
           const [],
     );
 
-Map<String, dynamic> _$$ProcedureItemImplToJson(_$ProcedureItemImpl instance) =>
+Map<String, dynamic> _$ProcedureItemToJson(_ProcedureItem instance) =>
     <String, dynamic>{
       'id': instance.id,
       'order': instance.order,
